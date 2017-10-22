@@ -134,10 +134,6 @@
     <Compile Include="Evolution\GeneticSharp\TargetSumFitness.cs" />
     <Compile Include="Evolution\GeneticSharp\Validations\ValidatedConfig.cs" />
     <Compile Include="Evolution\IEvolver.cs" />
-    <Compile Include="Evolution\Neat\BaseNeatExperiment.cs" />
-    <Compile Include="Evolution\Neat\BlackBoxEvaluator.cs" />
-    <Compile Include="Evolution\Neat\DecodeToCyclicNetwork.cs" />
-    <Compile Include="Evolution\Neat\NeatInverseDistanceFromValuesFitness.cs" />
     <Compile Include="Evolution\ParameterAdjuster.cs" />
     <Compile Include="Evolution\BallExtensions.cs" />
     <Compile Include="Evolution\BallFitness.cs" />
@@ -151,12 +147,6 @@
     <Compile Include="Evolution\Supervised\Backpropagator.cs" />
     <Compile Include="Views\FitnessPlot.cs">
       <SubType>Component</SubType>
-    </Compile>
-    <Compile Include="Views\MultipleFunctionView.cs">
-      <SubType>UserControl</SubType>
-    </Compile>
-    <Compile Include="Views\MultipleFunctionView.Designer.cs">
-      <DependentUpon>MultipleFunctionView.cs</DependentUpon>
     </Compile>
     <Compile Include="Parallel\ParallelProxy.cs" />
     <Compile Include="Intelligence\SimpleBrain.cs" />
@@ -179,9 +169,6 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
     <EmbeddedResource Include="Views\BallDisplay.resx">
       <DependentUpon>BallDisplay.cs</DependentUpon>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Views\MultipleFunctionView.resx">
-      <DependentUpon>MultipleFunctionView.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Settings.resx">
       <DependentUpon>Settings.cs</DependentUpon>
@@ -216,14 +203,6 @@
     <Compile Include="Intelligence\ActivationNetworkBrain.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\SharpNeatDomains\SharpNeatDomains.csproj">
-      <Project>{73ab8c8c-6315-4dc7-a3de-3c747f86ac78}</Project>
-      <Name>SharpNeatDomains</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\SharpNeatLib\SharpNeatLib.csproj">
-      <Project>{abc5c77a-deba-420c-926c-bd3e6f37ae15}</Project>
-      <Name>SharpNeatLib</Name>
-    </ProjectReference>
     <ProjectReference Include="..\Util\Util.csproj">
       <Project>{172B8011-568F-48DC-921F-9D9A0528537F}</Project>
       <Name>Util</Name>
