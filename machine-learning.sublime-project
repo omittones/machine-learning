@@ -1,0 +1,22 @@
+{
+	"folders":
+	[
+		{
+			"file_exclude_patterns":
+			[
+				"*.user",
+				"*.suo",
+				"*.dll",
+				"*.lock"
+			],
+			"folder_exclude_patterns":
+			[
+				"bin",
+				"obj",
+				"aspnet_client",
+				"packages/*"
+			],
+			"path": "."
+		}
+	]
+}
