@@ -1,0 +1,3 @@
+[submodule "conv-net-sharp"]
+	path = conv-net-sharp
+	url = git@github.com:omittones/ConvNetSharp.git
