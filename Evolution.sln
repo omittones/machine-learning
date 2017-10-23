@@ -11,6 +11,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NeuralMotion.Test", "Neural
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Configuration", "Configuration\Configuration.csproj", "{9438797E-91C9-480F-844B-0F586C22DE95}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ConvNetSharp.Core", "conv-net-sharp\src\ConvNetSharp.Core\ConvNetSharp.Core.csproj", "{AD634F91-FB1C-4F48-B17F-7E1F0A2C8DD2}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ConvNetSharp.Volume", "conv-net-sharp\src\ConvNetSharp.Volume\ConvNetSharp.Volume.csproj", "{0150401B-B46D-45A0-B7D3-EA87FC37AA2F}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -33,6 +37,14 @@ Global
 		{9438797E-91C9-480F-844B-0F586C22DE95}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{9438797E-91C9-480F-844B-0F586C22DE95}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{9438797E-91C9-480F-844B-0F586C22DE95}.Release|Any CPU.Build.0 = Release|Any CPU
+		{AD634F91-FB1C-4F48-B17F-7E1F0A2C8DD2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{AD634F91-FB1C-4F48-B17F-7E1F0A2C8DD2}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{AD634F91-FB1C-4F48-B17F-7E1F0A2C8DD2}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{AD634F91-FB1C-4F48-B17F-7E1F0A2C8DD2}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0150401B-B46D-45A0-B7D3-EA87FC37AA2F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0150401B-B46D-45A0-B7D3-EA87FC37AA2F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0150401B-B46D-45A0-B7D3-EA87FC37AA2F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0150401B-B46D-45A0-B7D3-EA87FC37AA2F}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

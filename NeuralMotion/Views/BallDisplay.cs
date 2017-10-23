@@ -49,9 +49,15 @@ namespace NeuralMotion.Views
         {
             string text = string.Empty;
             if (ShowPosition)
+            {
                 text += $"position {ball.Position.ToFormattedString()}\n";
+            }
             if (ShowSpeed)
+            {
                 text += $"speed {ball.Speed.ToFormattedString()}\n";
+                text += $"distance {ball.DistanceTravelled:0.00}\n";
+                text += $"energy {ball.Energy:0.00}\n";
+            }
             if (ShowKicks)
             {
                 var totalKicks = ball.KicksToBall + ball.KicksToBorder;

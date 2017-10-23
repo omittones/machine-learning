@@ -47,7 +47,7 @@ namespace NeuralMotion.Test
         [Fact]
         public void Expansion_expands_genome()
         {
-            IBrain brain = new ActivationNetworkBrain(2, 3, 3, 1);
+            IBrain brain = new AForgeBrain(2, 3, 3, 1);
             var smallGenomeCount = brain.NumberOfGenes;
 
             brain = brain.ExpandGenome(2);
@@ -63,7 +63,7 @@ namespace NeuralMotion.Test
         [Fact]
         public void Expansion_produces_same_results()
         {
-            IBrain brain = new ActivationNetworkBrain(2, 3, 3, 1);
+            IBrain brain = new AForgeBrain(2, 3, 3, 1);
 
             var first = brain.ExpandGenome(1);
             var second = brain.ExpandGenome(1);
@@ -82,7 +82,7 @@ namespace NeuralMotion.Test
         [Fact]
         public void Expansion_keeps_same_functionality()
         {
-            IBrain brain = new ActivationNetworkBrain(2, 3, 3, 1);
+            IBrain brain = new AForgeBrain(2, 3, 3, 1);
             for (var i = 0; i < brain.NumberOfGenes; i++)
                 brain[i] = (float) RandomEx.Global.NextDouble();
 

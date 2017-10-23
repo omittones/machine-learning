@@ -123,6 +123,14 @@
     <Service Include="{82A7F48D-3B50-4B1E-B82E-3ADA8210C358}" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\conv-net-sharp\src\ConvNetSharp.Core\ConvNetSharp.Core.csproj">
+      <Project>{ad634f91-fb1c-4f48-b17f-7e1f0a2c8dd2}</Project>
+      <Name>ConvNetSharp.Core</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\conv-net-sharp\src\ConvNetSharp.Volume\ConvNetSharp.Volume.csproj">
+      <Project>{0150401b-b46d-45a0-b7d3-ea87fc37aa2f}</Project>
+      <Name>ConvNetSharp.Volume</Name>
+    </ProjectReference>
     <ProjectReference Include="..\NeuralMotion\NeuralMotion.csproj">
       <Project>{b62c0990-b78c-416b-8a68-9a68bbeee0c4}</Project>
       <Name>NeuralMotion</Name>

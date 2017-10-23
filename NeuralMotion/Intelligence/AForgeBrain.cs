@@ -6,14 +6,14 @@ using Util;
 
 namespace NeuralMotion.Intelligence
 {
-    public class ActivationNetworkBrain : IBrain
+    public class AForgeBrain : IBrain
     {
         private readonly int lastExpandedLayer;
         private KeyValuePair<ActivationNeuron, int>[] neuronWeights;
         public ActivationNetwork Network { get; }
         public IActivationFunction ActivationFunction { get; }
 
-        public ActivationNetworkBrain(int inputsCount, params int[] layerCounts)
+        public AForgeBrain(int inputsCount, params int[] layerCounts)
         {
             this.ActivationFunction = new BipolarSigmoidFunction();
             this.Network = new ActivationNetwork(this.ActivationFunction, inputsCount, layerCounts);
@@ -25,7 +25,7 @@ namespace NeuralMotion.Intelligence
             RenderGenome();
         }
 
-        private ActivationNetworkBrain(ActivationNetwork network, IActivationFunction function, int lastExpandedLayer)
+        private AForgeBrain(ActivationNetwork network, IActivationFunction function, int lastExpandedLayer)
         {
             this.Network = network;
             this.ActivationFunction = function;
@@ -120,7 +120,7 @@ namespace NeuralMotion.Intelligence
                 }
             }
 
-            return new ActivationNetworkBrain(expandedNet, this.ActivationFunction, startExpandingFrom);
+            return new AForgeBrain(expandedNet, this.ActivationFunction, startExpandingFrom);
         }
 
         public IEnumerator<float> GetEnumerator()

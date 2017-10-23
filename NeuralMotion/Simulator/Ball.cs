@@ -21,11 +21,14 @@ namespace NeuralMotion.Simulator
         public PointF Position = new PointF(0, 0);
         public PointF Speed = new PointF(0, 0);
         public PointF Acceleration = new PointF(0, 0);
-
+        
         public float LastCollisionTime { get; private set; }
-        public float DistanceTravelled { get; set; }
+        public float DistanceTravelled;
+        public float Energy;
 
         private readonly List<int> collisions = new List<int>();
+        
+
         public int CollisionCount => collisions.Count;
 
         public Ball(IBrain brain)
@@ -52,6 +55,8 @@ namespace NeuralMotion.Simulator
             this.KicksToBorder = 0;
             this.DistanceTravelled = 0;
             this.LastCollisionTime = -1;
+            this.Energy = 0;
+            
             this.collisions.Clear();
         }
     }

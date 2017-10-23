@@ -5,19 +5,19 @@ using NeuralMotion.Intelligence;
 
 namespace NeuralMotion.Evolution.Supervised
 {
-    public class Backpropagator : IEvolver<ActivationNetworkBrain>
+    public class Backpropagator : IEvolver<AForgeBrain>
     {
         private readonly double[][] inputs;
         private readonly double[][] outputs;
         private readonly ParallelResilientBackpropagationLearning engine;
 
-        public ActivationNetworkBrain CurrentChampGenome { get; private set; }
+        public AForgeBrain CurrentChampGenome { get; private set; }
         public double BestFitness { get; private set; }
         public int CurrentGeneration { get; private set; }
 
         public int Size => 1;
 
-        public Backpropagator(ActivationNetworkBrain brain, double[][] inputs, double[][] outputs)
+        public Backpropagator(AForgeBrain brain, double[][] inputs, double[][] outputs)
         {
             this.CurrentChampGenome = brain;
             this.inputs = inputs;
@@ -37,7 +37,7 @@ namespace NeuralMotion.Evolution.Supervised
             yield break;
         }
 
-        public ActivationNetworkBrain[] GetPopulation()
+        public AForgeBrain[] GetPopulation()
         {
             return new[]
             {
@@ -45,7 +45,7 @@ namespace NeuralMotion.Evolution.Supervised
             };
         }
 
-        public void SetPopulation(ActivationNetworkBrain[] newPopulation)
+        public void SetPopulation(AForgeBrain[] newPopulation)
         {
             this.CurrentChampGenome = newPopulation.First();
         }

@@ -107,7 +107,9 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Intelligence\AForgeBrain.cs" />
     <Compile Include="Intelligence\BallController.cs" />
+    <Compile Include="Intelligence\ConvNetBrain.cs" />
     <Compile Include="Intelligence\IController.cs" />
     <Compile Include="Views\BallDisplay.cs">
       <SubType>UserControl</SubType>
@@ -200,9 +202,16 @@
       <DesignTimeSharedInput>True</DesignTimeSharedInput>
     </Compile>
     <Compile Include="Simulator\BoxArena.cs" />
-    <Compile Include="Intelligence\ActivationNetworkBrain.cs" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\conv-net-sharp\src\ConvNetSharp.Core\ConvNetSharp.Core.csproj">
+      <Project>{ad634f91-fb1c-4f48-b17f-7e1f0a2c8dd2}</Project>
+      <Name>ConvNetSharp.Core</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\conv-net-sharp\src\ConvNetSharp.Volume\ConvNetSharp.Volume.csproj">
+      <Project>{0150401b-b46d-45a0-b7d3-ea87fc37aa2f}</Project>
+      <Name>ConvNetSharp.Volume</Name>
+    </ProjectReference>
     <ProjectReference Include="..\Util\Util.csproj">
       <Project>{172B8011-568F-48DC-921F-9D9A0528537F}</Project>
       <Name>Util</Name>

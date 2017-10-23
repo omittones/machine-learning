@@ -60,18 +60,18 @@ namespace NeuralMotion.Intelligence
                     break;
                 case 1:
                     ball.Acceleration.X = 0;
-                    ball.Acceleration.Y = 1;
+                    ball.Acceleration.Y = 0.5f;
                     break;
                 case 2:
                     ball.Acceleration.X = 0;
-                    ball.Acceleration.Y = -1;
+                    ball.Acceleration.Y = -0.5f;
                     break;
                 case 3:
-                    ball.Acceleration.X = 1;
+                    ball.Acceleration.X = 0.5f;
                     ball.Acceleration.Y = 0;
                     break;
                 case 4:
-                    ball.Acceleration.X = -1;
+                    ball.Acceleration.X = -0.5f;
                     ball.Acceleration.Y = 0;
                     break;
             }

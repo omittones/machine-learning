@@ -68,7 +68,7 @@ namespace NeuralMotion
 
         private IBrain CreateBrain()
         {
-            return new ActivationNetworkBrain(controller.InputLength, 20, 10, controller.OutputLength);
+            return new ConvNetBrain(controller.InputLength, controller.OutputLength);
         }
 
         protected override void OnClosing(CancelEventArgs e)
@@ -179,8 +179,12 @@ namespace NeuralMotion
 
             this.uiFitnessPlot.AddPoint(this.evolver.CurrentGeneration, this.evolver.BestFitness, this.adjuster.Average);
 
-            Console.WriteLine("{0:000} epoch, fitness:{1:000.0000}", this.evolver.CurrentGeneration, this.evolver.BestFitness);
+            var hash = bestBall.Brain
+                .Hash()
+                .GetHashCode();
 
+            Console.WriteLine("{0:000} epoch, fitness:{1:000.0000} ({2})", this.evolver.CurrentGeneration, this.evolver.BestFitness, hash);
+            
             if (this.uiSettings.WriteStatus)
             {
                 Console.WriteLine();
@@ -197,6 +201,7 @@ namespace NeuralMotion
 
                 Console.WriteLine();
                 Console.WriteLine("Best ball");
+                Console.WriteLine("      Brain: {0}", hash);
                 Console.WriteLine("      Kicks To Ball: {0}", bestBall.KicksToBall);
                 Console.WriteLine("      Kicks From Ball: {0}", bestBall.KicksFromBall);
                 Console.WriteLine("      Kicks To Border: {0}", bestBall.KicksToBorder);

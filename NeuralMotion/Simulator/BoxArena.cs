@@ -68,8 +68,11 @@ namespace NeuralMotion.Simulator
 
             this.TotalCollisions = 0;
 
+            this.prevAccels = new PointF[this.EngineBalls.Length];
             for (var index = 0; index < EngineBalls.Length; index++)
             {
+                prevAccels[index] = PointF.Empty;
+
                 EngineBalls[index].Reset();
 
                 //stvori udaljenosti od ostalih loptica
@@ -97,6 +100,7 @@ namespace NeuralMotion.Simulator
         }
 
         private float lastTime = -1;
+        private PointF[] prevAccels;
 
         private void Loop()
         {
@@ -117,7 +121,7 @@ namespace NeuralMotion.Simulator
                         var duration = DateTime.UtcNow.Subtract(start).TotalSeconds;
                         duration = this.TimeStep - duration;
                         if (duration > 0)
-                            Thread.Sleep((int) (duration*1000));
+                            Thread.Sleep((int)(duration * 1000));
                     }
                 }
             }
@@ -148,26 +152,31 @@ namespace NeuralMotion.Simulator
             }
         }
 
+
         private void PhysicsLoop()
         {
             var detections = this.collisionDetector.Detect(this.EngineBalls, this.CurrentSimulationTime);
             this.TotalCollisions += detections;
-
+            
             //pokreni svaku loptu
             //zapamti jesu li u stanju kolizije
-            this.EngineBalls
-                .AsParallelEx()
-                .ForAll(ball =>
-                {
-                    //ograničenje brzine, simuliram light speed
-                    var speed = ball.Speed.Offset(ball.Acceleration.Scale(this.TimeStep));
-                    var speedLength = speed.Length();
-                    if (speedLength < this.MaximumBallSpeed)
-                        ball.Speed = speed;
+            for (var i = 0; i < this.EngineBalls.Length; i++)
+            {
+                var ball = this.EngineBalls[i];
+                ball.Energy += ball.Acceleration.Length() * this.TimeStep;
+                if (ball.Acceleration != prevAccels[i])
+                    ball.Energy += prevAccels[i].Length() * this.TimeStep;
+                prevAccels[i] = ball.Acceleration;
 
-                    ball.Position = ball.Position.Offset(ball.Speed.Scale(this.TimeStep));
-                    ball.DistanceTravelled += speedLength * this.TimeStep;
-                });
+                //ograničenje brzine, simuliram light speed
+                var speed = ball.Speed.Offset(ball.Acceleration.Scale(this.TimeStep));
+                var speedLength = speed.Length();
+                if (speedLength < this.MaximumBallSpeed)
+                    ball.Speed = speed;
+
+                ball.Position = ball.Position.Offset(ball.Speed.Scale(this.TimeStep));
+                ball.DistanceTravelled += speedLength * this.TimeStep;
+            }
         }
     }
 }
