@@ -146,7 +146,6 @@
     <Compile Include="Evolution\DetermineFitnessBySimulation.cs" />
     <Compile Include="Evolution\IChromosomeEvolver.cs" />
     <Compile Include="Evolution\Custom\ShrinkingRadiusSearch.cs" />
-    <Compile Include="Evolution\Supervised\Backpropagator.cs" />
     <Compile Include="Views\FitnessPlot.cs">
       <SubType>Component</SubType>
     </Compile>
