@@ -1,7 +1,7 @@
 using System.Linq;
-using AForge.Math;
-using AForge.Math.Random;
 using GeneticSharp.Domain.Chromosomes;
+using Accord.Math;
+using AForge.Math.Random;
 
 namespace NeuralMotion.Evolution.GeneticSharp
 {

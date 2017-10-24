@@ -33,7 +33,7 @@ namespace NeuralMotion.Test
             var predicted = net.Forward(inputs, false);
 
             //loss is the class negative log likelihood
-            var loss = 0.0;
+            var fitness = 0.0;
             for (var n = 0; n < size; n++)
                 for (var d = 0; d < outputs.Shape.GetDimension(2); d++)
                     for (var h = 0; h < outputs.Shape.GetDimension(1); h++)
@@ -44,15 +44,15 @@ namespace NeuralMotion.Test
                             if (actual == 0.0)
                                 actual = double.Epsilon;
                             var current = expected * Math.Log(actual);
-                            loss += current;
+                            fitness += current;
                         }
 
-            if (Ops<double>.IsInvalid(loss))
+            if (Ops<double>.IsInvalid(fitness))
             {
                 throw new ArgumentException("Error during calculation!");
             }
 
-            return -loss;
+            return fitness;
         }
     }
 }

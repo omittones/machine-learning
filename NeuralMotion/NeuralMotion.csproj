@@ -10,7 +10,7 @@
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>NeuralMotion</RootNamespace>
     <AssemblyName>NeuralMotion</AssemblyName>
-    <TargetFrameworkVersion>v4.6.1</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.7</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <FileUpgradeFlags>
     </FileUpgradeFlags>
@@ -56,29 +56,20 @@
       <HintPath>..\packages\Accord.Neuro.3.0.2\lib\net45\Accord.Neuro.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="GeneticSharp.Domain, Version=1.0.5894.2743, Culture=neutral, PublicKeyToken=d63d2a65268366c6, processorArchitecture=MSIL">
-      <HintPath>..\packages\GeneticSharp.1.0.100\lib\net35\GeneticSharp.Domain.dll</HintPath>
-      <Private>True</Private>
+    <Reference Include="GeneticSharp.Domain, Version=1.1.6378.25009, Culture=neutral, PublicKeyToken=d63d2a65268366c6, processorArchitecture=MSIL">
+      <HintPath>..\packages\GeneticSharp.1.1.19\lib\net35\GeneticSharp.Domain.dll</HintPath>
     </Reference>
-    <Reference Include="GeneticSharp.Extensions, Version=1.0.0.0, Culture=neutral, PublicKeyToken=f24c5e2578f0ecff, processorArchitecture=MSIL">
-      <HintPath>..\packages\GeneticSharp.1.0.100\lib\net35\GeneticSharp.Extensions.dll</HintPath>
-      <Private>True</Private>
+    <Reference Include="GeneticSharp.Extensions, Version=1.1.6378.25011, Culture=neutral, PublicKeyToken=f24c5e2578f0ecff, processorArchitecture=MSIL">
+      <HintPath>..\packages\GeneticSharp.1.1.19\lib\net35\GeneticSharp.Extensions.dll</HintPath>
     </Reference>
-    <Reference Include="GeneticSharp.Infrastructure.Framework, Version=1.0.0.0, Culture=neutral, PublicKeyToken=f24c5e2578f0ecff, processorArchitecture=MSIL">
-      <HintPath>..\packages\GeneticSharp.1.0.100\lib\net35\GeneticSharp.Infrastructure.Framework.dll</HintPath>
-      <Private>True</Private>
+    <Reference Include="GeneticSharp.Infrastructure.Framework, Version=1.1.6378.25008, Culture=neutral, PublicKeyToken=f24c5e2578f0ecff, processorArchitecture=MSIL">
+      <HintPath>..\packages\GeneticSharp.1.1.19\lib\net35\GeneticSharp.Infrastructure.Framework.dll</HintPath>
     </Reference>
-    <Reference Include="GeneticSharp.Infrastructure.Threading, Version=1.0.5894.2743, Culture=neutral, PublicKeyToken=f24c5e2578f0ecff, processorArchitecture=MSIL">
-      <HintPath>..\packages\GeneticSharp.1.0.100\lib\net35\GeneticSharp.Infrastructure.Threading.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
-    <Reference Include="HelperSharp, Version=1.0.5560.27038, Culture=neutral, PublicKeyToken=3d44152485e1a4e1, processorArchitecture=MSIL">
-      <HintPath>..\packages\GeneticSharp.1.0.100\lib\net35\HelperSharp.dll</HintPath>
-      <Private>True</Private>
+    <Reference Include="GeneticSharp.Infrastructure.Threading, Version=1.1.6378.25010, Culture=neutral, PublicKeyToken=f24c5e2578f0ecff, processorArchitecture=MSIL">
+      <HintPath>..\packages\GeneticSharp.1.1.19\lib\net35\GeneticSharp.Infrastructure.Threading.dll</HintPath>
     </Reference>
     <Reference Include="NCalc, Version=1.3.8.0, Culture=neutral, PublicKeyToken=973cde3f1cafed03, processorArchitecture=MSIL">
-      <HintPath>..\packages\GeneticSharp.1.0.100\lib\net35\NCalc.dll</HintPath>
-      <Private>True</Private>
+      <HintPath>..\packages\GeneticSharp.1.1.19\lib\net35\NCalc.dll</HintPath>
     </Reference>
     <Reference Include="OxyPlot, Version=1.0.0.0, Culture=neutral, PublicKeyToken=638079a8f0bd61e9, processorArchitecture=MSIL">
       <HintPath>..\packages\OxyPlot.Core.1.0.0-unstable2100\lib\net45\OxyPlot.dll</HintPath>
@@ -88,9 +79,8 @@
       <HintPath>..\packages\OxyPlot.WindowsForms.1.0.0-unstable2100\lib\net45\OxyPlot.WindowsForms.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="SmartThreadPool, Version=2.2.3.0, Culture=neutral, PublicKeyToken=1126fe8b671e8a79, processorArchitecture=MSIL">
-      <HintPath>..\packages\SmartThreadPool.dll.2.2.3\lib\SmartThreadPool.dll</HintPath>
-      <Private>True</Private>
+    <Reference Include="SmartThreadPool, Version=2.2.4.0, Culture=neutral, PublicKeyToken=1126fe8b671e8a79, processorArchitecture=MSIL">
+      <HintPath>..\packages\SmartThreadPool.dll.2.2.4\lib\net45\SmartThreadPool.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core">
@@ -99,6 +89,7 @@
     <Reference Include="System.Data" />
     <Reference Include="System.Deployment" />
     <Reference Include="System.Drawing" />
+    <Reference Include="System.Numerics" />
     <Reference Include="System.Windows.Forms" />
     <Reference Include="System.Xml" />
     <Reference Include="ZedGraph, Version=5.1.7.430, Culture=neutral, PublicKeyToken=02a83cbd123fcd60, processorArchitecture=MSIL">

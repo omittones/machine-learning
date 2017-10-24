@@ -28,19 +28,19 @@ namespace NeuralMotion.Test
         public void Polar_conversion_works()
         {
             var ap = this.a.FromCartesianToPolar();
-            Assert.Equal(ap.Radius, 1.414, 2);
+            Assert.Equal(1.414, ap.Radius, 2);
             Assert.Equal(ap.Angle, Math.PI/4, 2);
 
             var bp = this.b.FromCartesianToPolar();
-            Assert.Equal(bp.Radius, 1.414, 2);
+            Assert.Equal(1.414, bp.Radius, 2);
             Assert.Equal(bp.Angle, Math.PI/4*3, 2);
 
             var cp = this.c.FromCartesianToPolar();
-            Assert.Equal(cp.Radius, 1.414, 2);
+            Assert.Equal(1.414, cp.Radius, 2);
             Assert.Equal(cp.Angle, -Math.PI/4*3, 2);
 
             var dp = this.d.FromCartesianToPolar();
-            Assert.Equal(dp.Radius, 1.414, 2);
+            Assert.Equal(1.414, dp.Radius, 2);
             Assert.Equal(dp.Angle, -Math.PI/4, 2);
 
             var ep = this.e.FromCartesianToPolar();

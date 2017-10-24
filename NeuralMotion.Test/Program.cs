@@ -13,6 +13,8 @@ namespace NeuralMotion.Test
     {
         public static void Main(string[] args)
         {
+            const int SIZE = 10;
+
             var net = new Net<double>();
             net.AddLayer(new InputLayer(2, 2, 2));
             net.AddLayer(new FullyConnLayer(20));
@@ -25,7 +27,7 @@ namespace NeuralMotion.Test
 
             var rnd = new Random(DateTime.Now.Millisecond);
 
-            var inputs = BuilderInstance.Volume.SameAs(Shape.From(2, 2, 2, 2));
+            var inputs = BuilderInstance.Volume.SameAs(Shape.From(2, 2, 2, SIZE));
             inputs.Storage.MapInplace(i => rnd.Next(0, 2));
 
             int[] expectedClasses = BuildClasses(inputs);
@@ -37,19 +39,24 @@ namespace NeuralMotion.Test
             var evolver = new Evolver(fitness.ProtoChromosome, 100, fitness);
             while (true)
             {
-                var punishment = GetPunishment(net, inputs, expectedClasses);
+                if (evolver.CurrentChampGenome != null)
+                    net.FromChromosome(evolver.CurrentChampGenome);
+                GetPunishment(net, inputs, expectedClasses);
 
                 //trainer.Train(inputs, outputs);
                 evolver.PerformSingleStep();
                 Console.WriteLine("--------------- evolving ---------------");
 
+                net.FromChromosome(evolver.CurrentChampGenome);
                 GetPunishment(net, inputs, expectedClasses);
+                var predicedClasses = net.GetPrediction();
 
-                var accuracy = punishment.Where(p => p < 1).Count() * 100.0 / expectedClasses.Length;
+                var accuracy = expectedClasses
+                    .Zip(predicedClasses, (e, p) => e == p ? 1.0 : 00).Sum() * 100.0 / expectedClasses.Length;
 
                 Console.WriteLine($"LOSS: {evolver.BestFitness:0.00} ACC:{accuracy:0.00}%");
-                Console.WriteLine();
-                Console.ReadKey();
+                //Console.WriteLine();
+                //Console.ReadKey();
             }
 
             return;
