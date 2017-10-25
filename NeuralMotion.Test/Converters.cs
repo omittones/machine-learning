@@ -2,11 +2,23 @@
 using System.Linq;
 using GeneticSharp.Domain.Chromosomes;
 using NeuralMotion.Evolution.GeneticSharp;
+using ConvNetSharp.Volume;
+using ConvNetSharp.Volume.Double;
 
 namespace NeuralMotion.Test
 {
     public static class Converters
     {
+        public static Volume<double> ToSoftmaxVolume(this int[] classIndexes)
+        {
+            var nmClasses = classIndexes.Max() + 1;
+            var outputs = BuilderInstance.Volume.SameAs(Shape.From(1, 1, nmClasses, classIndexes.Length));
+            outputs.Clear();
+            for (var i = 0; i < classIndexes.Length; i++)
+                outputs.Set(0, 0, classIndexes[i], i, 1);
+            return outputs;
+        }
+
         public static IChromosome ToChromosome(this INet<double> net)
         {
             var parameters = net.GetParametersAndGradients();

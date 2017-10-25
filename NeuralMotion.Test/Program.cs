@@ -9,32 +9,13 @@ using NeuralMotion.Evolution.GeneticSharp;
 
 namespace NeuralMotion.Test
 {
+    
+
     public static class Program
     {
-        public static void Main(string[] args)
+        public static void Evolve(Net<double> net, Volume<double> inputs, int[] expectedClasses)
         {
-            const int SIZE = 10;
-
-            var net = new Net<double>();
-            net.AddLayer(new InputLayer(2, 2, 2));
-            net.AddLayer(new FullyConnLayer(20));
-            net.AddLayer(new LeakyReluLayer());
-            net.AddLayer(new FullyConnLayer(10));
-            net.AddLayer(new LeakyReluLayer());
-            net.AddLayer(new FullyConnLayer(4));
-            //net.AddLayer(new SoftmaxLayer(4));
-            net.AddLayer(new ReinforcementSoftmaxLayer(4));
-
-            var rnd = new Random(DateTime.Now.Millisecond);
-
-            var inputs = BuilderInstance.Volume.SameAs(Shape.From(2, 2, 2, SIZE));
-            inputs.Storage.MapInplace(i => rnd.Next(0, 2));
-
-            int[] expectedClasses = BuildClasses(inputs);
-            var outputs = BuilderInstance.Volume.SameAs(Shape.From(1, 1, 4, expectedClasses.Length));
-            for (var i = 0; i < expectedClasses.Length; i++)
-                outputs.Set(0, 0, expectedClasses[i], i, 1);
-
+            var outputs = expectedClasses.ToSoftmaxVolume();
             var fitness = new SoftmaxLossFitness(net, inputs, outputs);
             var evolver = new Evolver(fitness.ProtoChromosome, 100, fitness);
             while (true)
@@ -58,9 +39,120 @@ namespace NeuralMotion.Test
                 //Console.WriteLine();
                 //Console.ReadKey();
             }
+        }
 
-            return;
+        public static void Main(string[] args)
+        {
+            const int SIZE = 1000;
 
+            var net = new Net<double>();
+            net.AddLayer(new InputLayer(1, 1, 12));
+            net.AddLayer(new FullyConnLayer(20));
+            net.AddLayer(new LeakyReluLayer());
+            net.AddLayer(new FullyConnLayer(10));
+            net.AddLayer(new LeakyReluLayer());
+            net.AddLayer(new FullyConnLayer(1));
+            net.AddLayer(new RegressionLayer());
+            //net.AddLayer(new SoftmaxLayer(4));
+            //net.AddLayer(new ReinforcementSoftmaxLayer(4));
+
+            var rnd = new Random(DateTime.Now.Millisecond);
+
+            var inputs = BuilderInstance.Volume.SameAs(Shape.From(1, 1, 8 + 4, SIZE));
+
+            var count = inputs.Shape.GetDimension(3);
+            inputs.Storage.MapInplace(i => rnd.Next(0, 2));
+            for (var n = 0; n < count; n++)
+                for (var w = 8; w < 12; w++)
+                    inputs.Set(0, 0, w, n, 0);
+
+            int[] expectedClasses = BuildClasses(inputs);
+
+            var outputs = BuilderInstance.Volume.SameAs(Shape.From(1, 1, 1, count));
+            for (var n = 0; n < count; n++)
+            {
+                var predicted = rnd.Next(0, 4);
+                var reward = predicted == expectedClasses[n] ? 1 : 0;
+                inputs.Set(0, 0, 8 + predicted, n, 1);
+                outputs.Set(0, 0, 0, n, reward);
+            }
+
+            var trainer = new SgdTrainer(net);
+            trainer.LearningRate = 0.1;
+            trainer.L1Decay = 0.01;
+            trainer.L2Decay = 0;
+            trainer.Momentum = 0.2;
+            trainer.BatchSize = count;
+
+            while (true)
+            {
+                if (Console.KeyAvailable)
+                {
+                    var key = Console.ReadKey(true);
+                    if (key.Key == ConsoleKey.Enter)
+                        break;
+
+                    if (key.Key == ConsoleKey.UpArrow)
+                        trainer.LearningRate *= 1.1;
+                    if (key.Key == ConsoleKey.DownArrow)
+                        trainer.LearningRate /= 1.1;
+
+                    if (trainer.LearningRate > 0.9)
+                        trainer.LearningRate = 0.9;
+
+                    Console.WriteLine($"LR: {trainer.LearningRate:0.000000}");
+                }
+
+                trainer.Train(inputs, outputs);
+                Console.WriteLine($"LOSS: {trainer.Loss:0.00000000}");
+            }
+
+            inputs.Storage.MapInplace(i => rnd.Next(0, 2));
+            for (var n = 0; n < count; n++)
+                for (var w = 8; w < 12; w++)
+                    inputs.Set(0, 0, w, n, 0);
+            expectedClasses = BuildClasses(inputs);
+
+            var guesses = new Guess[count];
+            for (var n = 0; n < guesses.Length; n++)
+                guesses[n].Reward = double.MinValue;
+
+            for (var klass = 0; klass < 4; klass++)
+            {
+                for (var n = 0; n < count; n++)
+                {
+                    for (var w = 8; w < 12; w++)
+                        inputs.Set(0, 0, w, n, 0);
+                    inputs.Set(0, 0, klass + 8, n, 1);
+                }
+
+                var predictedReward = net.Forward(inputs, false);
+                for (var n = 0; n < guesses.Length; n++)
+                {
+                    var reward = predictedReward.Get(0, 0, 0, n);
+                    if (guesses[n].Reward < reward)
+                    {
+                        guesses[n].Reward = reward;
+                        guesses[n].Klass = klass;
+                    }
+                }
+            }
+
+            var accuracy = expectedClasses
+                .Zip(guesses, (e, g) => e == g.Klass ? 1.0 : 0)
+                .Sum() / expectedClasses.Length;
+            accuracy *= 100.0;
+            Console.WriteLine($"ACCURACY: {accuracy:0.00}%");
+        }
+
+        public struct Guess
+        {
+            public int Klass;
+            public double Reward;
+        }
+
+        private static void ReinforcementTesting(Net<double> net, Volume<double> inputs, int[] expectedClasses)
+        {
             var trainer = new ReinforcementTrainer(net);
             //var trainer = new SgdTrainer(net);
             trainer.LearningRate = 0.1;
@@ -166,6 +258,19 @@ namespace NeuralMotion.Test
 
             return punishment;
         }
+
+        //public string WriteSet(Volume<double> calculated, Volume<double> outputs)
+        //{
+        //    var probabilities = calculated.ToArray();
+        //    var batchSize = calculated.Shape.GetDimension(3);
+        //    var classCount = probabilities.Length / batchSize;
+        //    for (var n = 0; n < batchSize; n++)
+        //    {
+        //        Console.Write(probabilities.Skip(n * classCount).Take(classCount).ToArray().ToString("0.000"));
+        //        Console.Write(" -> ");
+        //        Console.WriteLine($"{predictedClasses[n]} vs. {expectedClasses[n]} (loss {punishment[n]})");
+        //    }
+        //}
 
         private static int[] BuildClasses(Volume<double> inputs)
         {
