@@ -6,13 +6,121 @@ using ConvNetSharp.Core;
 using ConvNetSharp.Volume;
 using System.Linq;
 using NeuralMotion.Evolution.GeneticSharp;
+using System.Collections.Generic;
+using System.Threading;
 
 namespace NeuralMotion.Test
 {
-    
-
-    public static class Program
+    //Implement from: https://github.com/karpathy/reinforcejs/blob/master/lib/rl.js
+    public static partial class Program
     {
+        public static void Main(string[] args)
+        {
+            var net = new Net<double>();
+            net.AddLayer(new InputLayer(1, 1, 2));
+            net.AddLayer(new FullyConnLayer(20));
+            net.AddLayer(new LeakyReluLayer());
+            net.AddLayer(new FullyConnLayer(10));
+            net.AddLayer(new LeakyReluLayer());
+            net.AddLayer(new FullyConnLayer(2));
+            net.AddLayer(new RegressionLayer());
+
+            var rnd = new Random(DateTime.Now.Millisecond);
+
+            var inputs = BuilderInstance.Volume.SameAs(Shape.From(1, 1, 2, 1));
+            var count = inputs.Shape.GetDimension(3);
+
+            var trainer = new SgdTrainer(net);
+            trainer.LearningRate = 0.1;
+            trainer.L1Decay = 0;
+            trainer.L2Decay = 0;
+            trainer.Momentum = 0;
+            trainer.BatchSize = count;
+
+            var qLearner = new BatchedDQNTrainer(net, trainer);
+            var loss = new List<double>();
+
+            ShowAccuracy(rnd, net);
+
+            while (true)
+            {
+                if (Console.KeyAvailable)
+                {
+                    var key = Console.ReadKey(true);
+                    if (key.Key == ConsoleKey.Enter)
+                        break;
+
+                    if (key.Key == ConsoleKey.A)
+                    {
+                        ShowAccuracy(rnd, net);
+                        Thread.Sleep(500);
+                    }
+                    else
+                    {
+                        if (key.Key == ConsoleKey.UpArrow)
+                            trainer.LearningRate *= 1.5;
+                        if (key.Key == ConsoleKey.DownArrow)
+                            trainer.LearningRate /= 1.5;
+
+                        if (trainer.LearningRate > 0.9)
+                            trainer.LearningRate = 0.9;
+
+                        Console.WriteLine($"LR: {trainer.LearningRate:0.000000}");
+                        Thread.Sleep(500);
+                    }
+                }
+
+                inputs.Storage.MapInplace(v => rnd.NextDouble());
+                for (var i = 0; i < 1; i++)
+                {
+                    var expectedActions = BuildClasses(inputs);
+                    var predictedActions = qLearner.Forwards(inputs, true);
+
+                    var rewards = new double[1][];
+                    rewards[0] = new double[expectedActions.Length];
+                    for (var l = 0; l < expectedActions.Length; l++)
+                        rewards[0][l] = expectedActions[l] == predictedActions[l] ? 1 : 0;
+
+                    inputs.Storage.MapInplace(v => rnd.NextDouble());
+                    qLearner.Backwards(rewards, inputs);
+                }
+
+                var accuracy = GetAccuracy(rnd, net);
+
+                loss.Add(qLearner.Loss);
+                if (loss.Count > 1000)
+                    loss.RemoveAt(0);
+
+                Console.WriteLine($"ACC: {accuracy:0.00}   LOSS: {loss.Average():0.00000000}");
+            }
+        }
+
+        private static double GetAccuracy(Random rnd, Net<double> net)
+        {
+            var validation = BuilderInstance.Volume.SameAs(Shape.From(1, 1, 2, 1000));
+            validation.Storage.MapInplace(v => rnd.NextDouble());
+            var expectedValidation = BuildClasses(validation);
+
+            var output = net.Forward(validation);
+            var predictedValidation = new int[validation.Shape.GetDimension(3)];
+            for (var n = 0; n < predictedValidation.Length; n++)
+                predictedValidation[n] = validation.Get(0, 0, 0, n) > validation.Get(0, 0, 1, n) ? 0 : 1;
+
+            var accuracy = expectedValidation
+                .Zip(predictedValidation, (e, p) => e == p ? 1.0 : 0)
+                .Sum() / expectedValidation.Length;
+            accuracy *= 100.0;
+
+            return accuracy;
+        }
+
+        private static void ShowAccuracy(Random rnd, Net<double> net)
+        {
+            var accuracy = GetAccuracy(rnd, net);
+
+            Console.WriteLine($"ACCURACY: {accuracy:0.00}%");
+        }
+
         public static void Evolve(Net<double> net, Volume<double> inputs, int[] expectedClasses)
         {
             var outputs = expectedClasses.ToSoftmaxVolume();
@@ -41,117 +149,11 @@ namespace NeuralMotion.Test
             }
         }
 
-        public static void Main(string[] args)
-        {
-            const int SIZE = 1000;
 
-            var net = new Net<double>();
-            net.AddLayer(new InputLayer(1, 1, 12));
-            net.AddLayer(new FullyConnLayer(20));
-            net.AddLayer(new LeakyReluLayer());
-            net.AddLayer(new FullyConnLayer(10));
-            net.AddLayer(new LeakyReluLayer());
-            net.AddLayer(new FullyConnLayer(1));
-            net.AddLayer(new RegressionLayer());
-            //net.AddLayer(new SoftmaxLayer(4));
-            //net.AddLayer(new ReinforcementSoftmaxLayer(4));
-
-            var rnd = new Random(DateTime.Now.Millisecond);
-
-            var inputs = BuilderInstance.Volume.SameAs(Shape.From(1, 1, 8 + 4, SIZE));
-
-            var count = inputs.Shape.GetDimension(3);
-            inputs.Storage.MapInplace(i => rnd.Next(0, 2));
-            for (var n = 0; n < count; n++)
-                for (var w = 8; w < 12; w++)
-                    inputs.Set(0, 0, w, n, 0);
-
-            int[] expectedClasses = BuildClasses(inputs);
-
-            var outputs = BuilderInstance.Volume.SameAs(Shape.From(1, 1, 1, count));
-            for (var n = 0; n < count; n++)
-            {
-                var predicted = rnd.Next(0, 4);
-                var reward = predicted == expectedClasses[n] ? 1 : 0;
-                inputs.Set(0, 0, 8 + predicted, n, 1);
-                outputs.Set(0, 0, 0, n, reward);
-            }
-
-            var trainer = new SgdTrainer(net);
-            trainer.LearningRate = 0.1;
-            trainer.L1Decay = 0.01;
-            trainer.L2Decay = 0;
-            trainer.Momentum = 0.2;
-            trainer.BatchSize = count;
-
-            while (true)
-            {
-                if (Console.KeyAvailable)
-                {
-                    var key = Console.ReadKey(true);
-                    if (key.Key == ConsoleKey.Enter)
-                        break;
-
-                    if (key.Key == ConsoleKey.UpArrow)
-                        trainer.LearningRate *= 1.1;
-                    if (key.Key == ConsoleKey.DownArrow)
-                        trainer.LearningRate /= 1.1;
-
-                    if (trainer.LearningRate > 0.9)
-                        trainer.LearningRate = 0.9;
-
-                    Console.WriteLine($"LR: {trainer.LearningRate:0.000000}");
-                }
-
-                trainer.Train(inputs, outputs);
-                Console.WriteLine($"LOSS: {trainer.Loss:0.00000000}");
-            }
-
-            inputs.Storage.MapInplace(i => rnd.Next(0, 2));
-            for (var n = 0; n < count; n++)
-                for (var w = 8; w < 12; w++)
-                    inputs.Set(0, 0, w, n, 0);
-            expectedClasses = BuildClasses(inputs);
-
-            var guesses = new Guess[count];
-            for (var n = 0; n < guesses.Length; n++)
-                guesses[n].Reward = double.MinValue;
-
-            for (var klass = 0; klass < 4; klass++)
-            {
-                for (var n = 0; n < count; n++)
-                {
-                    for (var w = 8; w < 12; w++)
-                        inputs.Set(0, 0, w, n, 0);
-                    inputs.Set(0, 0, klass + 8, n, 1);
-                }
-
-                var predictedReward = net.Forward(inputs, false);
-                for (var n = 0; n < guesses.Length; n++)
-                {
-                    var reward = predictedReward.Get(0, 0, 0, n);
-                    if (guesses[n].Reward < reward)
-                    {
-                        guesses[n].Reward = reward;
-                        guesses[n].Klass = klass;
-                    }
-                }
-            }
-
-            var accuracy = expectedClasses
-                .Zip(guesses, (e, g) => e == g.Klass ? 1.0 : 0)
-                .Sum() / expectedClasses.Length;
-            accuracy *= 100.0;
-            Console.WriteLine($"ACCURACY: {accuracy:0.00}%");
-        }
-
-        public struct Guess
-        {
-            public int Klass;
-            public double Reward;
-        }
-
-        private static void ReinforcementTesting(Net<double> net, Volume<double> inputs, int[] expectedClasses)
+        private static void ReinforcementTesting(
+            Net<double> net, 
+            Volume<double> inputs, 
+            int[] expectedClasses)
         {
             var trainer = new ReinforcementTrainer(net);
             //var trainer = new SgdTrainer(net);
@@ -275,24 +277,19 @@ namespace NeuralMotion.Test
         private static int[] BuildClasses(Volume<double> inputs)
         {
             var count = inputs.Shape.GetDimension(3);
-            var expectedClasses = new int[count];
-            var reshaped = inputs.ReShape(1, 1, -1, count);
+            var output = new int[count];
             for (var n = 0; n < count; n++)
             {
-                var sum = 0;
-                for (var i = 0; i < 8; i++)
-                    sum += (int)reshaped.Get(0, 0, i, n);
-                if (sum < 3)
-                    expectedClasses[n] = 0;
-                else if (sum < 5)
-                    expectedClasses[n] = 1;
-                else if (sum < 7)
-                    expectedClasses[n] = 2;
-                else
-                    expectedClasses[n] = 3;
+                var x = inputs.Get(0, 0, 0, n);
+                var y = inputs.Get(0, 0, 0, n);
+
+                if (x < 0.1 || x > 0.9)
+                    output[n] = 1;
+                if (y < 0.1 || y > 0.9)
+                    output[n] = 1;
             }
 
-            return expectedClasses;
+            return output;
         }
     }
 }
