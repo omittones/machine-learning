@@ -94,6 +94,7 @@
     <Compile Include="Given_utils.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="ReinforceJS.cs" />
     <Compile Include="SoftmaxLossFitness.cs" />
   </ItemGroup>
   <ItemGroup>
