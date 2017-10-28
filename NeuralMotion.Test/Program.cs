@@ -57,9 +57,9 @@ namespace NeuralMotion.Test
                 Alpha = 0.01,
                 Epsilon = 0.1,
                 ReplaySkipCount = 1,
-                ReplayMemorySize = 20,
+                ReplayMemorySize = 1000,
                 Gamma = 0,
-                LearningStepsPerIteration = 5,
+                LearningStepsPerIteration = 100,
                 ClampErrorTo = double.MaxValue
             };
 

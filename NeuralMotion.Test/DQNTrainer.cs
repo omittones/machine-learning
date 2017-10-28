@@ -92,7 +92,8 @@ namespace NeuralMotion.Test
                 trainingSet.Add(xp);
 
                 // decide if we should keep this experience in the replay
-                if (this.Samples % this.ReplaySkipCount == 0)
+                if (this.ReplaySkipCount < 1 ||
+                    this.Samples % this.ReplaySkipCount == 0)
                 {
                     if (this.repMemIndex == this.replayMemory.Count)
                         this.replayMemory.Add(new Experience());
