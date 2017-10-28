@@ -8,44 +8,48 @@ using System.Linq;
 using NeuralMotion.Evolution.GeneticSharp;
 using System.Collections.Generic;
 using System.Threading;
+using System.Windows.Forms;
+using System.Threading.Tasks;
 
 namespace NeuralMotion.Test
 {
-    //Implement from: https://github.com/karpathy/reinforcejs/blob/master/lib/rl.js
     public static partial class Program
     {
         public static void Main(string[] args)
         {
             var net = new Net<double>();
             net.AddLayer(new InputLayer(1, 1, 2));
-            net.AddLayer(new FullyConnLayer(20));
-            net.AddLayer(new LeakyReluLayer());
             net.AddLayer(new FullyConnLayer(10));
             net.AddLayer(new LeakyReluLayer());
+            net.AddLayer(new FullyConnLayer(5));
+            net.AddLayer(new LeakyReluLayer());
             net.AddLayer(new FullyConnLayer(2));
+            net.AddLayer(new SigmoidLayer());
             net.AddLayer(new RegressionLayer());
 
-            var rnd = new Random(DateTime.Now.Millisecond);
+            var task = Task.Run(() =>
+            {
+                Application.EnableVisualStyles();
+                Application.SetCompatibleTextRenderingDefault(false);
+                Application.Run(new Main(net));
 
+                Console.WriteLine("Display thread stopped!");
+            });
+
+            var rnd = new Random(DateTime.Now.Millisecond);
             var inputs = BuilderInstance.Volume.SameAs(Shape.From(1, 1, 2, 1));
             var count = inputs.Shape.GetDimension(3);
 
-            var trainer = new SgdTrainer(net);
-            trainer.LearningRate = 0.1;
-            trainer.L1Decay = 0;
-            trainer.L2Decay = 0;
-            trainer.Momentum = 0;
-            trainer.BatchSize = count;
-
             //var qLearner = new BatchedDQNTrainer(net, trainer);
+
             var qLearner = new DQNAgent(net, 2)
             {
-                alpha = 0.1,
+                alpha = 0.01,
                 epsilon = 0.1,
                 experience_add_every = 1,
-                experience_size = 100,
+                experience_size = 20,
                 gamma = 0,
-                learning_steps_per_iteration = 10,
+                learning_steps_per_iteration = 5,
                 clamp_error_to = double.MaxValue
             };
 
@@ -53,7 +57,7 @@ namespace NeuralMotion.Test
 
             ShowAccuracy(rnd, net);
 
-            while (true)
+            while (task.Status == TaskStatus.Running)
             {
                 if (Console.KeyAvailable)
                 {
@@ -69,59 +73,70 @@ namespace NeuralMotion.Test
                     else
                     {
                         if (key.Key == ConsoleKey.UpArrow)
-                            trainer.LearningRate *= 1.5;
+                            qLearner.alpha *= 1.5;
                         if (key.Key == ConsoleKey.DownArrow)
-                            trainer.LearningRate /= 1.5;
+                            qLearner.alpha /= 1.5;
 
-                        if (trainer.LearningRate > 0.9)
-                            trainer.LearningRate = 0.9;
+                        if (qLearner.alpha > 0.9)
+                            qLearner.alpha = 0.9;
 
-                        Console.WriteLine($"LR: {trainer.LearningRate:0.000000}");
+                        Console.WriteLine($"LR: {qLearner.alpha:0.000000}");
                         Thread.Sleep(500);
                     }
                 }
 
-                inputs.Storage.MapInplace(v => rnd.NextDouble());
-                for (var i = 0; i < 1; i++)
+                lock (net)
                 {
-                    var expectedActions = GetClasses(inputs);
-                    var predictedActions = new[] { qLearner.act(inputs.ToArray()) };
+                    inputs.Storage.MapInplace(v => rnd.NextDouble());
+                    for (var i = 0; i < 1; i++)
+                    {
+                        var expectedActions = GetClasses(inputs);
+                        var predictedActions = new[] { qLearner.act(inputs.ToArray()) };
 
-                    var rewards = new double[1][];
-                    rewards[0] = new double[expectedActions.Length];
-                    for (var l = 0; l < expectedActions.Length; l++)
-                        rewards[0][l] = expectedActions[l] == predictedActions[l] ? 1 : 0;
+                        var rewards = new double[1][];
+                        rewards[0] = new double[expectedActions.Length];
+                        for (var l = 0; l < expectedActions.Length; l++)
+                            rewards[0][l] = expectedActions[l] == predictedActions[l] ? 1 : 0;
 
-                    qLearner.learn(rewards[0][0]);
+                        qLearner.learn(rewards[0][0]);
+                    }
                 }
-
-                var accuracy = GetAccuracy(rnd, net);
 
                 loss.Add(qLearner.Loss);
                 if (loss.Count > 1000)
                     loss.RemoveAt(0);
 
-                Console.WriteLine($"ACC: {accuracy:0.00}   LOSS: {loss.Average():0.00000000}");
+                if (qLearner.sample % 100 == 0)
+                {
+                    var accuracy = GetAccuracy(rnd, net);
+                    Console.WriteLine($"{qLearner.sample:0000} ACC: {accuracy:0.00}   LOSS: {loss.Average():0.00000000}");
+                }
             }
+
+            task.Wait();
         }
 
         private static double GetAccuracy(Random rnd, Net<double> net)
         {
-            var validation = BuilderInstance.Volume.SameAs(Shape.From(1, 1, 2, 1000));
-            validation.Storage.MapInplace(v => rnd.NextDouble());
-            var expectedValidation = GetClasses(validation);
+            lock (net)
+            {
 
-            var output = net.Forward(validation);
-            var predictedValidation = new int[validation.Shape.GetDimension(3)];
-            for (var n = 0; n < predictedValidation.Length; n++)
-                predictedValidation[n] = output.Get(0, 0, 0, n) > output.Get(0, 0, 1, n) ? 0 : 1;
+                var validation = BuilderInstance.Volume.SameAs(Shape.From(1, 1, 2, 1000));
+                validation.Storage.MapInplace(v => rnd.NextDouble());
+                var expectedValidation = GetClasses(validation);
 
-            var accuracy = expectedValidation
-                .Zip(predictedValidation, (e, p) => e == p ? 1.0 : 0)
-                .Sum() / expectedValidation.Length;
-            accuracy *= 100.0;
+                var output = net.Forward(validation);
+                var predictedValidation = new int[validation.Shape.GetDimension(3)];
+                for (var n = 0; n < predictedValidation.Length; n++)
+                    predictedValidation[n] = output.Get(0, 0, 0, n) > output.Get(0, 0, 1, n) ? 0 : 1;
 
-            return accuracy;
+                var accuracy = expectedValidation
+                    .Zip(predictedValidation, (e, p) => e == p ? 1.0 : 0)
+                    .Sum() / expectedValidation.Length;
+                accuracy *= 100.0;
+
+                return accuracy;
+            }
         }
 
         private static void ShowAccuracy(Random rnd, Net<double> net)
@@ -291,11 +306,11 @@ namespace NeuralMotion.Test
             for (var n = 0; n < count; n++)
             {
                 var x = inputs.Get(0, 0, 0, n);
-                var y = inputs.Get(0, 0, 0, n);
+                var y = inputs.Get(0, 0, 1, n);
 
-                if (x < 0.1 || x > 0.9)
+                if (x < 0.2 || x > 0.8)
                     output[n] = 1;
-                if (y < 0.1 || y > 0.9)
+                if (y < 0.2 || y > 0.8)
                     output[n] = 1;
             }
 

@@ -5,7 +5,7 @@ using OxyPlot.WindowsForms;
 
 namespace NeuralMotion.Views
 {
-    public partial class FitnessPlot : PlotView
+    public class FitnessPlot : PlotView
     {
         private LineSeries plotFitness;
         private LineSeries plotAverage;

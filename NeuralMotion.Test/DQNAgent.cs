@@ -7,46 +7,13 @@ using System.Linq;
 
 namespace NeuralMotion.Test
 {
-    public class Experiences
-    {
-        public double r0;
-        public Volume<double> s0;
-        public Volume<double> s1;
-        public int a0;
-        public int a1;
-
-        internal static Experiences New(Volume<double> s0, int a0, double r0, Volume<double> s1, int a1)
-        {
-            return new Experiences
-            {
-                s0 = s0.Clone(),
-                s1 = s1.Clone(),
-                a0 = a0,
-                a1 = a1,
-                r0 = r0
-            };
-        }
-    }
-
-    public static class VolumeExtension
-    {
-        public static int IndexOfMax(this Volume<double> output)
-        {
-            int a = 0;
-            for (var i = 1; i < output.Shape.GetDimension(2); i++)
-                if (output.Get(0, 0, i, 0) > output.Get(0, 0, a, 0))
-                    a = i;
-            return a;
-        }
-    }
-    
     public class DQNAgent
     {
         private Net<double> net;
         private List<Experiences> exp;
         private List<double> loss;
         private int expi;
-        private int sample;
+        
         private double? r0;
         private Volume<double> s0;
         private Volume<double> s1;
@@ -57,7 +24,8 @@ namespace NeuralMotion.Test
         private InputLayer inputLayer;
         private int nmActions;
         private Random rnd;
-        
+
+        public int sample { get; private set; }
         public double gamma { get; set; }
         public double epsilon { get; set; }
         public double alpha { get; set; }
@@ -66,7 +34,7 @@ namespace NeuralMotion.Test
         public int learning_steps_per_iteration { get; set; }
         public double clamp_error_to { get; set; }
 
-        public double Loss => loss.Average();
+        public double Loss => loss.Count == 0 ? 1 : loss.Average();
 
         public DQNAgent(
             Net<double> net,
@@ -154,6 +122,8 @@ namespace NeuralMotion.Test
 
         public void learn(double r)
         {
+            this.loss.Clear();
+
             // perform an update on Q function
             if (this.r0.HasValue && this.alpha > 0)
             {
@@ -223,8 +193,6 @@ namespace NeuralMotion.Test
             this.updateNet(this.net, this.alpha);
 
             loss.Add(Math.Abs(tderror));
-            if (loss.Count > 100)
-                loss.RemoveAt(0);
         }
 
         private void updateNet(INet<double> net, double alpha)

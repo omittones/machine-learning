@@ -163,6 +163,9 @@
     </Compile>
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Views\OxyPlotView.cs">
+      <SubType>Component</SubType>
+    </Compile>
     <EmbeddedResource Include="Views\BallDisplay.resx">
       <DependentUpon>BallDisplay.cs</DependentUpon>
     </EmbeddedResource>
