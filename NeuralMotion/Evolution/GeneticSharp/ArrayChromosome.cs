@@ -1,19 +1,19 @@
 using System.Linq;
 using GeneticSharp.Domain.Chromosomes;
 using Accord.Math;
-using AForge.Math.Random;
+using Accord.Statistics.Distributions.Univariate;
 
 namespace NeuralMotion.Evolution.GeneticSharp
 {
     public class ArrayChromosome : ChromosomeBase
     {
-        private readonly GaussianGenerator random;
+        private readonly NormalDistribution random;
 
         public double[] Values => this.GetGenes().Select(g => g.Value).Cast<double>().ToArray();
 
         public ArrayChromosome(int length) : base(length)
         {
-            this.random = new GaussianGenerator(0, 1.0f);
+            this.random = new NormalDistribution(0, 1.0f);
             this.ReplaceGenes(0, Enumerable.Range(0, length)
                 .Select(this.GenerateGene)
                 .ToArray());
@@ -35,7 +35,7 @@ namespace NeuralMotion.Evolution.GeneticSharp
 
         public override Gene GenerateGene(int geneIndex)
         {
-            double value = random.Next();
+            double value = random.Generate();
             return new Gene(value);
         }
 

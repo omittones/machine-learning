@@ -1,7 +1,7 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using AForge.Neuro;
+using Accord.Neuro;
 
 namespace NeuralMotion.Intelligence
 {

@@ -37,7 +37,18 @@ namespace NeuralMotion.Test
             trainer.Momentum = 0;
             trainer.BatchSize = count;
 
-            var qLearner = new BatchedDQNTrainer(net, trainer);
+            //var qLearner = new BatchedDQNTrainer(net, trainer);
+            var qLearner = new DQNAgent(net, 2)
+            {
+                alpha = 0.1,
+                epsilon = 0.1,
+                experience_add_every = 1,
+                experience_size = 100,
+                gamma = 0,
+                learning_steps_per_iteration = 10,
+                clamp_error_to = double.MaxValue
+            };
+
             var loss = new List<double>();
 
             ShowAccuracy(rnd, net);
@@ -73,16 +84,15 @@ namespace NeuralMotion.Test
                 inputs.Storage.MapInplace(v => rnd.NextDouble());
                 for (var i = 0; i < 1; i++)
                 {
-                    var expectedActions = BuildClasses(inputs);
-                    var predictedActions = qLearner.Forwards(inputs, true);
+                    var expectedActions = GetClasses(inputs);
+                    var predictedActions = new[] { qLearner.act(inputs.ToArray()) };
 
                     var rewards = new double[1][];
                     rewards[0] = new double[expectedActions.Length];
                     for (var l = 0; l < expectedActions.Length; l++)
                         rewards[0][l] = expectedActions[l] == predictedActions[l] ? 1 : 0;
 
-                    inputs.Storage.MapInplace(v => rnd.NextDouble());
-                    qLearner.Backwards(rewards, inputs);
+                    qLearner.learn(rewards[0][0]);
                 }
 
                 var accuracy = GetAccuracy(rnd, net);
@@ -99,12 +109,12 @@ namespace NeuralMotion.Test
         {
             var validation = BuilderInstance.Volume.SameAs(Shape.From(1, 1, 2, 1000));
             validation.Storage.MapInplace(v => rnd.NextDouble());
-            var expectedValidation = BuildClasses(validation);
+            var expectedValidation = GetClasses(validation);
 
             var output = net.Forward(validation);
             var predictedValidation = new int[validation.Shape.GetDimension(3)];
             for (var n = 0; n < predictedValidation.Length; n++)
-                predictedValidation[n] = validation.Get(0, 0, 0, n) > validation.Get(0, 0, 1, n) ? 0 : 1;
+                predictedValidation[n] = output.Get(0, 0, 0, n) > output.Get(0, 0, 1, n) ? 0 : 1;
 
             var accuracy = expectedValidation
                 .Zip(predictedValidation, (e, p) => e == p ? 1.0 : 0)
@@ -274,7 +284,7 @@ namespace NeuralMotion.Test
         //    }
         //}
 
-        private static int[] BuildClasses(Volume<double> inputs)
+        private static int[] GetClasses(Volume<double> inputs)
         {
             var count = inputs.Shape.GetDimension(3);
             var output = new int[count];

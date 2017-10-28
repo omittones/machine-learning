@@ -1,5 +1,4 @@
 ﻿using System;
-using ConvNetSharp.Volume.Double;
 using ConvNetSharp.Core;
 using ConvNetSharp.Volume;
 using System.Collections.Generic;
