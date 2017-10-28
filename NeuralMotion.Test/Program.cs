@@ -10,6 +10,8 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Windows.Forms;
 using System.Threading.Tasks;
+using NeuralMotion.Evolution.Annealing;
+using NeuralMotion.Evolution.Custom;
 
 namespace NeuralMotion.Test
 {
@@ -37,25 +39,29 @@ namespace NeuralMotion.Test
             });
 
             var rnd = new Random(DateTime.Now.Millisecond);
-            var inputs = BuilderInstance.Volume.SameAs(Shape.From(1, 1, 2, 1));
-            var count = inputs.Shape.GetDimension(3);
-
-            //var qLearner = new BatchedDQNTrainer(net, trainer);
-
-            var qLearner = new DQNAgent(net, 2)
-            {
-                alpha = 0.01,
-                epsilon = 0.1,
-                experience_add_every = 1,
-                experience_size = 20,
-                gamma = 0,
-                learning_steps_per_iteration = 5,
-                clamp_error_to = double.MaxValue
-            };
-
-            var loss = new List<double>();
 
             ShowAccuracy(rnd, net);
+
+            RunQLearning(net, task, rnd);
+            //RunGenetic(net, task, rnd);
+
+            task.Wait();
+        }
+
+        private static void RunQLearning(Net<double> net, Task task, Random rnd)
+        {
+            var loss = new List<double>();
+            var inputs = new double[] { 0, 0 };
+            var qLearner = new DQNTrainer(net, 2)
+            {
+                Alpha = 0.01,
+                Epsilon = 0.1,
+                ReplaySkipCount = 1,
+                ReplayMemorySize = 20,
+                Gamma = 0,
+                LearningStepsPerIteration = 5,
+                ClampErrorTo = double.MaxValue
+            };
 
             while (task.Status == TaskStatus.Running)
             {
@@ -73,32 +79,30 @@ namespace NeuralMotion.Test
                     else
                     {
                         if (key.Key == ConsoleKey.UpArrow)
-                            qLearner.alpha *= 1.5;
+                            qLearner.Alpha *= 1.5;
                         if (key.Key == ConsoleKey.DownArrow)
-                            qLearner.alpha /= 1.5;
+                            qLearner.Alpha /= 1.5;
 
-                        if (qLearner.alpha > 0.9)
-                            qLearner.alpha = 0.9;
+                        if (qLearner.Alpha > 0.9)
+                            qLearner.Alpha = 0.9;
 
-                        Console.WriteLine($"LR: {qLearner.alpha:0.000000}");
+                        Console.WriteLine($"LR: {qLearner.Alpha:0.000000}");
                         Thread.Sleep(500);
                     }
                 }
 
                 lock (net)
                 {
-                    inputs.Storage.MapInplace(v => rnd.NextDouble());
+                    inputs = inputs.Select(v => rnd.NextDouble()).ToArray();
                     for (var i = 0; i < 1; i++)
                     {
                         var expectedActions = GetClasses(inputs);
-                        var predictedActions = new[] { qLearner.act(inputs.ToArray()) };
 
-                        var rewards = new double[1][];
-                        rewards[0] = new double[expectedActions.Length];
-                        for (var l = 0; l < expectedActions.Length; l++)
-                            rewards[0][l] = expectedActions[l] == predictedActions[l] ? 1 : 0;
+                        var predictedAction = qLearner.Act(inputs.ToArray());
 
-                        qLearner.learn(rewards[0][0]);
+                        var reward = expectedActions[0] == predictedAction.Decision ? 1.0 : 0.0;
+
+                        qLearner.Learn(predictedAction, inputs.ToArray(), reward);
                     }
                 }
 
@@ -106,14 +110,46 @@ namespace NeuralMotion.Test
                 if (loss.Count > 1000)
                     loss.RemoveAt(0);
 
-                if (qLearner.sample % 100 == 0)
+                if (qLearner.Samples % 100 == 0)
                 {
                     var accuracy = GetAccuracy(rnd, net);
-                    Console.WriteLine($"{qLearner.sample:0000} ACC: {accuracy:0.00}   LOSS: {loss.Average():0.00000000}");
+                    Console.WriteLine($"{qLearner.Samples:0000} ACC: {accuracy:0.00}   LOSS: {loss.Average():0.00000000}");
                 }
             }
+        }
 
-            task.Wait();
+        public static void RunGenetic(Net<double> net, Task task, Random rnd)
+        {
+            var inputs = BuilderInstance<double>.Volume.SameAs(Shape.From(1, 1, 2, 1000));
+            inputs.MapInplace(v => rnd.NextDouble());
+            var expectedClasses = GetClasses(inputs);
+
+            var outputs = expectedClasses.ToSoftmaxVolume();
+            var fitness = new SoftmaxLossFitness(net, inputs, outputs);
+            var evolver = new ShrinkingRadiusSearch(100, (ArrayChromosome)fitness.ProtoChromosome, fitness, 10);
+            //var evolver = new Evolver(fitness.ProtoChromosome, 100, fitness, mutation: new NumberMutation());
+            //var evolver = new SimulatedAnnealing((ArrayChromosome)fitness.ProtoChromosome, fitness,
+            //    step: 1,
+            //    alpha: 0.9999);
+
+            while (task.Status == TaskStatus.Running)
+            {
+                lock (net)
+                {
+                    if (evolver.CurrentChampGenome != null)
+                        net.FromChromosome(evolver.CurrentChampGenome);
+
+                    evolver.PerformSingleStep();
+
+                    net.FromChromosome(evolver.CurrentChampGenome);
+
+                    var accuracy = GetAccuracy(rnd, net);
+
+                    Console.WriteLine($"{evolver.CurrentGeneration * evolver.Size:0000}  LOSS: {evolver.BestFitness:0.00} ACC:{accuracy:0.00}%");
+                    foreach (var line in evolver.StatusReport())
+                        Console.WriteLine(line);
+                }
+            }
         }
 
         private static double GetAccuracy(Random rnd, Net<double> net)
@@ -145,160 +181,7 @@ namespace NeuralMotion.Test
 
             Console.WriteLine($"ACCURACY: {accuracy:0.00}%");
         }
-
-        public static void Evolve(Net<double> net, Volume<double> inputs, int[] expectedClasses)
-        {
-            var outputs = expectedClasses.ToSoftmaxVolume();
-            var fitness = new SoftmaxLossFitness(net, inputs, outputs);
-            var evolver = new Evolver(fitness.ProtoChromosome, 100, fitness);
-            while (true)
-            {
-                if (evolver.CurrentChampGenome != null)
-                    net.FromChromosome(evolver.CurrentChampGenome);
-                GetPunishment(net, inputs, expectedClasses);
-
-                //trainer.Train(inputs, outputs);
-                evolver.PerformSingleStep();
-                Console.WriteLine("--------------- evolving ---------------");
-
-                net.FromChromosome(evolver.CurrentChampGenome);
-                GetPunishment(net, inputs, expectedClasses);
-                var predicedClasses = net.GetPrediction();
-
-                var accuracy = expectedClasses
-                    .Zip(predicedClasses, (e, p) => e == p ? 1.0 : 00).Sum() * 100.0 / expectedClasses.Length;
-
-                Console.WriteLine($"LOSS: {evolver.BestFitness:0.00} ACC:{accuracy:0.00}%");
-                //Console.WriteLine();
-                //Console.ReadKey();
-            }
-        }
-
-
-        private static void ReinforcementTesting(
-            Net<double> net, 
-            Volume<double> inputs, 
-            int[] expectedClasses)
-        {
-            var trainer = new ReinforcementTrainer(net);
-            //var trainer = new SgdTrainer(net);
-            trainer.LearningRate = 0.1;
-            trainer.L1Decay = 0;
-            trainer.L2Decay = 0;
-            trainer.Momentum = 0;
-            trainer.BatchSize = inputs.Shape.GetDimension(3);
-
-            while (true)
-            {
-                if (false)
-                {
-                    var firstOutput = net.Forward(inputs, false).ToArray();
-                    Console.WriteLine(firstOutput.ToString("0.000"));
-                    Console.WriteLine("-------- rewarding ----------------");
-                    var loss = new double[] { -1 };
-                    for (var epoch = 0; epoch < 10; epoch++)
-                    {
-                        trainer.Reinforce(inputs, loss);
-                        var secondOutput = net.Forward(inputs, false).ToArray();
-                        Console.WriteLine(secondOutput.ToString("0.000"));
-                    }
-                    Console.WriteLine("-------- punishing ----------------");
-                    loss = new double[] { 1 };
-                    for (var epoch = 0; epoch < 10; epoch++)
-                    {
-                        trainer.Reinforce(inputs, loss);
-                        var secondOutput = net.Forward(inputs, false).ToArray();
-                        Console.WriteLine(secondOutput.ToString("0.000"));
-                    }
-                    break;
-                }
-                else
-                {
-                    var punishment = GetPunishment(net, inputs, expectedClasses);
-
-                    //trainer.Train(inputs, outputs);
-                    trainer.Reinforce(inputs, punishment);
-                    Console.WriteLine("-------- reinforcing ----------------");
-
-                    GetPunishment(net, inputs, expectedClasses);
-
-                    var accuracy = punishment.Where(p => p < 1).Count() * 100.0 / expectedClasses.Length;
-
-                    Console.WriteLine($"LOSS: {trainer.Loss:0.00} ACC:{accuracy:0.00}%");
-                    Console.WriteLine();
-                    Console.ReadKey();
-                }
-            }
-        }
-
-        public static double[] Gradients(this Net<double> net)
-        {
-            return net
-                .GetParametersAndGradients()
-                .SelectMany(g => g.Gradient.ToArray())
-                .ToArray();
-        }
-
-        public static double[] Parameters(this Net<double> net)
-        {
-            return net
-                .GetParametersAndGradients()
-                .SelectMany(g => g.Volume.ToArray())
-                .ToArray();
-        }
-
-        private static double[] GetPunishment(INet<double> net, Volume<double> inputs, int[] expectedClasses)
-        {
-            var size = inputs.Shape.GetDimension(3);
-            var calculated = net.Forward(inputs, false);
-            var predictedClasses = net.GetPrediction();
-            var punishment = new double[size];
-
-            double negatives = 0; double positives = 0;
-            for (var n = 0; n < size; n++)
-            {
-                if (expectedClasses[n] != predictedClasses[n])
-                {
-                    positives += 1;
-                    punishment[n] = 1;
-                }
-                else
-                {
-                    negatives += 1;
-                    punishment[n] = -1;
-                }
-            }
-            for (var n = 0; n < size; n++)
-            {
-                punishment[n] = punishment[n] < 0 ? punishment[n] / negatives : punishment[n] / positives;
-            }
-
-            var probabilities = calculated.ToArray();
-            var batchSize = calculated.Shape.GetDimension(3);
-            var classCount = probabilities.Length / batchSize;
-            for (var n = 0; n < batchSize; n++)
-            {
-                Console.Write(probabilities.Skip(n * classCount).Take(classCount).ToArray().ToString("0.000"));
-                Console.Write(" -> ");
-                Console.WriteLine($"{predictedClasses[n]} vs. {expectedClasses[n]} (loss {punishment[n]})");
-            }
-
-            return punishment;
-        }
-
-        //public string WriteSet(Volume<double> calculated, Volume<double> outputs)
-        //{
-        //    var probabilities = calculated.ToArray();
-        //    var batchSize = calculated.Shape.GetDimension(3);
-        //    var classCount = probabilities.Length / batchSize;
-        //    for (var n = 0; n < batchSize; n++)
-        //    {
-        //        Console.Write(probabilities.Skip(n * classCount).Take(classCount).ToArray().ToString("0.000"));
-        //        Console.Write(" -> ");
-        //        Console.WriteLine($"{predictedClasses[n]} vs. {expectedClasses[n]} (loss {punishment[n]})");
-        //    }
-        //}
-
+        
         private static int[] GetClasses(Volume<double> inputs)
         {
             var count = inputs.Shape.GetDimension(3);

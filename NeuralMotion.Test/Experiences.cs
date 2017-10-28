@@ -2,23 +2,27 @@
 
 namespace NeuralMotion.Test
 {
-    public class Experiences
+    public struct Action
     {
-        public double r0;
-        public Volume<double> s0;
-        public Volume<double> s1;
-        public int a0;
-        public int a1;
+        public double[] State;
+        public int Decision;
+    }
 
-        internal static Experiences New(Volume<double> s0, int a0, double r0, Volume<double> s1, int a1)
+    internal struct Experience
+    {
+        public double reward;
+        public double[] state;
+        public double[] nextState;
+        public int actionTaken;
+
+        internal static Experience New(double[] s0, int a0, double r0, double[] s1)
         {
-            return new Experiences
+            return new Experience
             {
-                s0 = s0.Clone(),
-                s1 = s1.Clone(),
-                a0 = a0,
-                a1 = a1,
-                r0 = r0
+                state = s0,
+                nextState = s1,
+                actionTaken = a0,
+                reward = r0
             };
         }
     }

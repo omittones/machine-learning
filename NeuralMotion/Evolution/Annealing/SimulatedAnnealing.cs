@@ -9,7 +9,7 @@ using Util;
 
 namespace NeuralMotion.Evolution.Annealing
 {
-    internal class SimulatedAnnealing : IChromosomeEvolver
+    public class SimulatedAnnealing : IChromosomeEvolver
     {
         private readonly IFitness fitnessEvaluator;
 
@@ -40,12 +40,16 @@ namespace NeuralMotion.Evolution.Annealing
         public int BetterSolutionsTaken { get; private set; }
         public int WorseSolutionsTaken { get; private set; }
 
-        public SimulatedAnnealing(ArrayChromosome adam, IFitness fitnessEvaluator, double alpha = 0.999)
+        public SimulatedAnnealing(
+            ArrayChromosome adam, 
+            IFitness fitnessEvaluator, 
+            double step = 0.1,
+            double alpha = 0.999)
         {
             this.fitnessEvaluator = fitnessEvaluator;
             this.geneIndex = 0;
             this.geneDirection = 1;
-            this.geneStep = 0.1;
+            this.geneStep = step;
 
             this.currentTemperature = 100;
             this.cutoffTemperature = 1;
@@ -98,9 +102,9 @@ namespace NeuralMotion.Evolution.Annealing
 
         private ArrayChromosome ApplyChangeAndCalculateFitness()
         {
-            var changed = (ArrayChromosome) this.CurrentChampGenome.Clone();
+            var changed = (ArrayChromosome)this.CurrentChampGenome.Clone();
             var value = changed.Values[geneIndex];
-            value += geneDirection*geneStep;
+            value += geneDirection * geneStep;
             changed.ReplaceGene(geneIndex, new Gene(value));
             changed.Fitness = this.fitnessEvaluator.Evaluate(changed);
 

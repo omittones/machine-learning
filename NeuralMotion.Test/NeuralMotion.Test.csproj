@@ -91,10 +91,8 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="BatchedDQNTrainer.cs" />
     <Compile Include="Converters.cs" />
-    <Compile Include="DQNAgent.cs" />
-    <Compile Include="Experience.cs" />
+    <Compile Include="DQNTrainer.cs" />
     <Compile Include="Experiences.cs" />
     <Compile Include="Given_radius_search.cs" />
     <Compile Include="Given_coordinates.cs" />
