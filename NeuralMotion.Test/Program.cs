@@ -12,6 +12,7 @@ using System.Windows.Forms;
 using System.Threading.Tasks;
 using NeuralMotion.Evolution.Annealing;
 using NeuralMotion.Evolution.Custom;
+using ConvNetSharp.Core.Training;
 
 namespace NeuralMotion.Test
 {

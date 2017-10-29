@@ -92,8 +92,6 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Converters.cs" />
-    <Compile Include="DQNTrainer.cs" />
-    <Compile Include="Experiences.cs" />
     <Compile Include="Given_radius_search.cs" />
     <Compile Include="Given_coordinates.cs" />
     <Compile Include="Given_evolver.cs" />
@@ -108,7 +106,6 @@
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="SoftmaxLossFitness.cs" />
-    <Compile Include="VolumeExtension.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
@@ -120,10 +117,6 @@
     <ProjectReference Include="..\conv-net-sharp\src\ConvNetSharp.Core\ConvNetSharp.Core.csproj">
       <Project>{ad634f91-fb1c-4f48-b17f-7e1f0a2c8dd2}</Project>
       <Name>ConvNetSharp.Core</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\conv-net-sharp\src\ConvNetSharp.ReinforcementLearning.Deep\ConvNetSharp.ReinforcementLearning.Deep.csproj">
-      <Project>{e4e29c69-ef32-46bd-b7ce-574324e9f454}</Project>
-      <Name>ConvNetSharp.ReinforcementLearning.Deep</Name>
     </ProjectReference>
     <ProjectReference Include="..\conv-net-sharp\src\ConvNetSharp.Volume\ConvNetSharp.Volume.csproj">
       <Project>{0150401b-b46d-45a0-b7d3-ea87fc37aa2f}</Project>
