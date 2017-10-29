@@ -1,10 +1,8 @@
 ﻿using System;
 using System.Drawing;
-using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using NeuralMotion.Intelligence;
-using NeuralMotion.Parallel;
 using Util;
 
 namespace NeuralMotion.Simulator
@@ -12,27 +10,25 @@ namespace NeuralMotion.Simulator
     public partial class BoxArena
     {
         public Ball[] EngineBalls { get; private set; }
-
         public float TimeStep { get; private set; }
         public float BallRadius { get; private set; }
-        public bool RealTime { set; get; }
-        public float SimulationDuration { get; private set; }
         public float CurrentSimulationTime { get; private set; }
         public int TotalCollisions { get; private set; }
+
+        public bool RealTime { set; get; }
+        public float SimulationDuration { get; set; }
 
         public float MaximumBallSpeed
         {
             get { return this.BallRadius / this.TimeStep; }
         }
 
-        private readonly Func<Ball> ballFactory;
         private readonly IController controller;
         private readonly CollisionDetector collisionDetector;
         private Task task;
 
         public BoxArena(
-            IController controller, 
-            Func<Ball> ballFactory,
+            IController controller,
             int noBalls = 5,
             float ballRadius = 0.06f)
         {
@@ -44,7 +40,6 @@ namespace NeuralMotion.Simulator
             this.BallRadius = ballRadius;
 
             this.controller = controller;
-            this.ballFactory = ballFactory;
             this.collisionDetector = new CollisionDetector
             {
                 BallRadius = this.BallRadius
@@ -53,7 +48,7 @@ namespace NeuralMotion.Simulator
             //stvori lopte i dodatne parametre koje engine koristi
             this.EngineBalls = new Ball[noBalls];
             for (var index = 0; index < EngineBalls.Length; index++)
-                this.EngineBalls[index] = ballFactory();
+                this.EngineBalls[index] = new Ball(index);
         }
 
         public float RandomPosition(RandomEx generator)
@@ -88,13 +83,7 @@ namespace NeuralMotion.Simulator
 
             this.CurrentSimulationTime = 0;
 
-            this.task = Task
-                .Run((Action) Loop)
-                .ContinueWith(previous =>
-                {
-                    this.CurrentSimulationTime = this.SimulationDuration;
-                    this.task = null;
-                });
+            this.task = Task.Run((Action)Loop);
 
             return this.task;
         }
@@ -124,10 +113,14 @@ namespace NeuralMotion.Simulator
                             Thread.Sleep((int)(duration * 1000));
                     }
                 }
+
+                this.CurrentSimulationTime = this.SimulationDuration;
+                this.task = null;
             }
-            catch
+            catch (Exception ex)
             {
                 this.CurrentSimulationTime = SimulationDuration;
+                Console.WriteLine(ex.Message);
                 throw;
             }
         }
@@ -138,21 +131,11 @@ namespace NeuralMotion.Simulator
                 this.CurrentSimulationTime - lastTime >= 0.1)
             {
                 lastTime = this.CurrentSimulationTime;
-
-                this.EngineBalls
-                    .AsParallelEx()
-                    .ForAll(ball =>
-                    {
-                        var inputs = this.controller.SelectInput(this.EngineBalls, ball);
-
-                        var output = ball.Brain.GetOutput(inputs);
-
-                        this.controller.HandleOutput(ball, output);
-                    });
+                foreach (var ball in this.EngineBalls)
+                    this.controller.Control(this.EngineBalls, ball);
             }
         }
-
-
+        
         private void PhysicsLoop()
         {
             var detections = this.collisionDetector.Detect(this.EngineBalls, this.CurrentSimulationTime);

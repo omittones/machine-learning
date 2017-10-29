@@ -102,8 +102,8 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="DQNController.cs" />
     <Compile Include="Intelligence\AForgeBrain.cs" />
-    <Compile Include="Intelligence\BallController.cs" />
     <Compile Include="Intelligence\ConvNetBrain.cs" />
     <Compile Include="Intelligence\IController.cs" />
     <Compile Include="Views\BallDisplay.cs">
@@ -137,7 +137,6 @@
     <Compile Include="Evolution\GeneticSharp\ArrayChromosome.cs" />
     <Compile Include="Evolution\GeneticSharp\Evolver.cs" />
     <Compile Include="Evolution\GeneticSharp\Executor.cs" />
-    <Compile Include="Evolution\HandcraftedEvolver.cs" />
     <Compile Include="Evolution\DetermineFitnessBySimulation.cs" />
     <Compile Include="Evolution\IChromosomeEvolver.cs" />
     <Compile Include="Evolution\Custom\ShrinkingRadiusSearch.cs" />

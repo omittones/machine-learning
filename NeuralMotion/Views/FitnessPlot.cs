@@ -2,53 +2,82 @@
 using OxyPlot;
 using OxyPlot.Series;
 using OxyPlot.WindowsForms;
+using OxyPlot.Axes;
 
 namespace NeuralMotion.Views
 {
     public class FitnessPlot : PlotView
     {
-        private LineSeries plotFitness;
-        private LineSeries plotAverage;
-        
+        private LineSeries plotLoss;
+        private LineSeries plotReward;
+
         private void EnsureInitialized()
         {
+
             if (this.Model == null)
             {
-                this.Model = new PlotModel();
-                this.plotFitness = new LineSeries
+                this.plotLoss = new LineSeries
                 {
-                    BrokenLineColor = OxyColors.Automatic,
+                    BrokenLineColor = OxyColors.Blue,
                     BrokenLineThickness = 1,
-                    StrokeThickness = 1
+                    StrokeThickness = 1,
+                    YAxisKey = "loss-y"
                 };
-                this.Model.Series.Add(plotFitness);
-                this.plotAverage = new LineSeries
+                this.plotReward = new LineSeries
                 {
-                    BrokenLineColor = OxyColors.Automatic,
+                    BrokenLineColor = OxyColors.Red,
                     BrokenLineThickness = 1,
-                    StrokeThickness = 1
+                    StrokeThickness = 1,
+                    YAxisKey = "reward-y"
                 };
-                this.Model.Series.Add(plotAverage);
+
+                this.Model = new PlotModel()
+                {
+                    Axes =
+                    {
+                        new LogarithmicAxis
+                        {
+                            Position = AxisPosition.Left,
+                            Key = "loss-y",
+                            Title = "loss"
+                        },
+                        new LinearAxis
+                        {
+                            Position = AxisPosition.Right,
+                            Key = "reward-y",
+                            Title = "reward"
+                        },
+                        new LinearAxis
+                        {
+                            Position = AxisPosition.Bottom
+                        }
+                    },
+                    Series =
+                    {
+                        plotLoss,
+                        plotReward
+                    }
+                };
             }
         }
 
-        public void AddPoint(int generation, double fitness, double average)
+        public void AddPoint(int sample, double loss, double reward)
         {
             EnsureInitialized();
 
-            if (this.plotFitness.Points.Count > 0 &&
-                this.plotAverage.Points.Count > 0)
+            if (this.plotLoss.Points.Count > 0 &&
+                this.plotReward.Points.Count > 0)
             {
-                var lastFitness = this.plotFitness.Points.Last().Y;
-                var lastAverage = this.plotAverage.Points.Last().Y;
-                if (lastFitness == fitness && lastAverage == average)
+                var lastLoss = this.plotLoss.Points.Last().Y;
+                var lastReward = this.plotReward.Points.Last().Y;
+                if (lastLoss == loss && lastReward == reward)
                     return;
             }
 
-            lock (this.plotFitness)
+            lock (this.plotLoss)
             {
-                this.plotFitness.Points.Add(new DataPoint(generation, fitness));
-                this.plotAverage.Points.Add(new DataPoint(generation, average));
+                this.plotLoss.Points.Add(new DataPoint(sample, loss));
+                this.plotReward.Points.Add(new DataPoint(sample, reward));
                 this.InvalidatePlot(true);
             }
         }

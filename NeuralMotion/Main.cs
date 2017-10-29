@@ -1,74 +1,40 @@
 ﻿using System;
 using System.ComponentModel;
-using System.Linq;
 using System.Threading.Tasks;
 using System.Windows.Forms;
-using NeuralMotion.Evolution;
-using NeuralMotion.Evolution.GeneticSharp;
-using NeuralMotion.Intelligence;
 using NeuralMotion.Simulator;
 using Util;
+using System.Linq;
 
 namespace NeuralMotion
 {
     public partial class Main : Form
     {
-        private static readonly HiResTimer hiResTimer = new HiResTimer();
-        
-        private bool closing;
-        
+        private static readonly Random rnd = new Random();
         private readonly Settings uiSettings;
-        private readonly DetermineFitnessBySimulation fitnessFunction;
-        private readonly IController controller;
-        private readonly ParameterAdjuster adjuster;
-        private readonly IChromosomeEvolver evolver;
-        private int lastImprovementGeneration;
+        private readonly DQNController controller;
+        private bool closing;
+        private Task simulation;
 
         public BoxArena BoxArena { get; private set; }
 
         public Main()
         {
-            Func<Ball> ballFactory = () => new Ball(CreateBrain());
-
-            this.lastImprovementGeneration = 0;
-            this.adjuster = new ParameterAdjuster();
-            this.controller = new BallController();
-            this.BoxArena = new BoxArena(controller, ballFactory, 10, 0.06f);
-            this.fitnessFunction = new DetermineFitnessBySimulation(this.BoxArena);
-
-            this.evolver = new Evolver(100, this.fitnessFunction, GeneCount());
-            //this.evolver = new SimulatedAnnealing(adam, this.fitnessFunction);
-            //this.evolver = new BruteForceSearch(adam, this.fitnessFunction, -1, 1, 0.5);
-
-            InitializePopulation();
+            this.controller = new DQNController();
+            this.BoxArena = new BoxArena(controller, 4, 0.06f)
+            {
+                SimulationDuration = 20000,
+                RealTime = true
+            };
 
             InitializeComponent();
 
             this.uiSettings = new Settings();
             this.uiArena.Arena = this.BoxArena;
-            this.BoxArena.RealTime = false;
 
-            refreshTimer.Interval = 1000/60;
-        }
-
-        private int GeneCount()
-        {
-            return this.BoxArena.EngineBalls.Max(ball => ball.Brain.NumberOfGenes);
-        }
-
-        private void InitializePopulation()
-        {
-            var initialValues = CreateBrain()
-                .Select(e => (double)e)
-                .ToArray();
-            var population = new double[evolver.Size][];
-            population.SetAll(initialValues);
-            evolver.SetPopulation(population);
-        }
-
-        private IBrain CreateBrain()
-        {
-            return new ConvNetBrain(controller.InputLength, controller.OutputLength);
+            refreshTimer.Interval = 1000 / 60;
+            infoTimer.Interval = 1000;
+            infoTimer.Tick += ShowInfo;
         }
 
         protected override void OnClosing(CancelEventArgs e)
@@ -95,140 +61,97 @@ namespace NeuralMotion
 
             Console.WriteLine("Loaded...");
 
-            hiResTimer.Reset();
-
-            this.refreshTimer.Start();
-            
-            Task.Run(() =>
+            this.simulation = this.BoxArena.RunAsync((index, ball) =>
             {
-                try
-                {
-                    while (true)
-                    {
-                        this.evolver.PerformSingleStep();
+                Console.WriteLine($"Created ball {ball.Id}...");
 
-                        this.ShowInfo();
-
-                        this.AdaptToFitnessChange(this.evolver.BestFitness);
-                    }
-                }
-                catch (Exception ex)
+                ball.Position = new System.Drawing.PointF
                 {
-                    Console.WriteLine(ex);
-                }
+                    X = (float)rnd.NextDouble() * 2 - 1.0f,
+                    Y = (float)rnd.NextDouble() * 2 - 1.0f
+                };
             });
+
+            this.refreshTimer.Enabled = true;
+            this.infoTimer.Enabled = true;
         }
 
-        private void AdaptToFitnessChange(double lastGenerationFitness)
+        private double TotalRewards()
         {
-            this.adjuster.RecordLastGenerationFitness(lastGenerationFitness);
-
-            this.evolver.Adjust(this.adjuster);
-
-            if (uiSettings.EnableNetExpansion)
-            {
-                ImproveBrainsWhenConverged();
-            }
+            return BoxArena.EngineBalls.Sum(b => controller.Reward(b));
         }
 
-        private void ImproveBrainsWhenConverged()
+        private double oldRewards = 0;
+        private void ShowInfo(object sender, EventArgs args)
         {
-            if (this.adjuster.RelativeStdDev < 0.2)
+            var trainer = controller.Trainer;
+
+            if (this.simulation.Status == TaskStatus.Running)
             {
-                if (this.evolver.CurrentGeneration - this.lastImprovementGeneration > 10)
-                {
-                    ImproveBrainsAndResetEvolver(2);
-                    this.lastImprovementGeneration = this.evolver.CurrentGeneration;
-                }
+                var newRewards = TotalRewards();
+                var dRewards = newRewards - oldRewards;
+                oldRewards = newRewards;
+
+                Console.WriteLine($"{trainer.Samples:0000}   LOSS: {trainer.Loss:0.00000000}   REWARDS:{dRewards:0.0000}");
+                this.uiFitnessPlot.AddPoint(trainer.Samples, trainer.Loss * 50, dRewards);
             }
             else
             {
-                this.lastImprovementGeneration = this.evolver.CurrentGeneration;
-            }
-        }
-
-        private void ImproveBrainsAndResetEvolver(int expandFactor)
-        {
-            Console.WriteLine("Expanding neural net...");
-
-            var brain = this.BoxArena.EngineBalls.First().Brain;
-            var populus = ChromosomeEvolverExtensions.GetPopulation(this.evolver);
-            for (var i = 0; i < populus.Length; i++)
-            {
-                brain.LoadBrain(populus[i]);
-                var expandedBrain = brain.ExpandGenome(expandFactor);
-                populus[i] = expandedBrain.Select(g => (double) g).ToArray();
-            }
-
-            Array.ForEach(this.BoxArena.EngineBalls, b =>
-            {
-                b.Brain = brain.ExpandGenome(expandFactor);
-            });
-
-            this.evolver.SetPopulation(populus);
-
-            var newGeneCount = this.BoxArena.EngineBalls.Max(b => b.Brain.NumberOfGenes);
-
-            Console.WriteLine($"Expanded from {brain.NumberOfGenes} to {newGeneCount} genes.");
-            Console.WriteLine();
-        }
-        
-        private void ShowInfo()
-        {
-            var bestBall = this.fitnessFunction.BestBall.Ball;
-
-            this.uiFitnessPlot.AddPoint(this.evolver.CurrentGeneration, this.evolver.BestFitness, this.adjuster.Average);
-
-            var hash = bestBall.Brain
-                .Hash()
-                .GetHashCode();
-
-            Console.WriteLine("{0:000} epoch, fitness:{1:000.0000} ({2})", this.evolver.CurrentGeneration, this.evolver.BestFitness, hash);
-            
-            if (this.uiSettings.WriteStatus)
-            {
-                Console.WriteLine();
-                Console.WriteLine("Max possible speed: {0}", this.BoxArena.MaximumBallSpeed);
-                Console.WriteLine("        Gene count: {0}", this.evolver.CurrentChampGenome.Length);
-
-                var lines = this.evolver.StatusReport().Select(l =>
+                if (this.simulation.IsFaulted)
                 {
-                    var totalLength = Math.Max(0, 18 - l.IndexOf(':')) + l.Length;
-                    return l.PadLeft(totalLength, ' ');
-                }).ToArray();
-                foreach (var line in lines)
-                    Console.WriteLine(line);
-
-                Console.WriteLine();
-                Console.WriteLine("Best ball");
-                Console.WriteLine("      Brain: {0}", hash);
-                Console.WriteLine("      Kicks To Ball: {0}", bestBall.KicksToBall);
-                Console.WriteLine("      Kicks From Ball: {0}", bestBall.KicksFromBall);
-                Console.WriteLine("      Kicks To Border: {0}", bestBall.KicksToBorder);
-                Console.WriteLine("      Distance Travelled: {0}", bestBall.DistanceTravelled);
-                Console.WriteLine("      Speed: {0}", bestBall.Speed.Distance(0, 0));
-                Console.WriteLine("Total Collisions: " + this.BoxArena.TotalCollisions);
-                Console.WriteLine("Best Fitness: {0}", this.evolver.BestFitness);
-                Console.WriteLine();
-                Console.WriteLine();
+                    Console.WriteLine($"Simulation stopped! " + this.simulation.Exception?.Message);
+                }
+                else
+                {
+                    Console.WriteLine($"Simulation stopped!");
+                }
             }
 
-            if (!this.uiSettings.DontPreviewBest)
-            {
-                this.uiArena.ShowPreviewFlag = true;
 
-                if (!this.BoxArena.RealTime)
-                    this.BoxArena.RealTime = true;
+            //Console.WriteLine("{0:000} epoch, fitness:{1:000.0000} ({2})", this.evolver.CurrentGeneration, this.evolver.BestFitness, hash);
 
-                this.fitnessFunction.Evaluate(this.evolver.CurrentChampGenome);
+            //if (this.uiSettings.WriteStatus)
+            //{
+            //    Console.WriteLine();
+            //    Console.WriteLine("Max possible speed: {0}", this.BoxArena.MaximumBallSpeed);
+            //    Console.WriteLine("        Gene count: {0}", this.evolver.CurrentChampGenome.Length);
 
-                if (this.BoxArena.RealTime)
-                    this.BoxArena.RealTime = false;
+            //    var lines = this.evolver.StatusReport().Select(l =>
+            //    {
+            //        var totalLength = Math.Max(0, 18 - l.IndexOf(':')) + l.Length;
+            //        return l.PadLeft(totalLength, ' ');
+            //    }).ToArray();
+            //    foreach (var line in lines)
+            //        Console.WriteLine(line);
 
-                this.uiArena.ShowPreviewFlag = false;
-            }
+            //    Console.WriteLine();
+            //    Console.WriteLine("Best ball");
+            //    Console.WriteLine("      Brain: {0}", hash);
+            //    Console.WriteLine("      Kicks To Ball: {0}", bestBall.KicksToBall);
+            //    Console.WriteLine("      Kicks From Ball: {0}", bestBall.KicksFromBall);
+            //    Console.WriteLine("      Kicks To Border: {0}", bestBall.KicksToBorder);
+            //    Console.WriteLine("      Distance Travelled: {0}", bestBall.DistanceTravelled);
+            //    Console.WriteLine("      Speed: {0}", bestBall.Speed.Distance(0, 0));
+            //    Console.WriteLine("Total Collisions: " + this.BoxArena.TotalCollisions);
+            //    Console.WriteLine("Best Fitness: {0}", this.evolver.BestFitness);
+            //    Console.WriteLine();
+            //    Console.WriteLine();
+            //}
 
-            Main.hiResTimer.Reset();
+            //if (!this.uiSettings.DontPreviewBest)
+            //{
+            //    this.uiArena.ShowPreviewFlag = true;
+
+            //    if (!this.BoxArena.RealTime)
+            //        this.BoxArena.RealTime = true;
+
+            //    this.fitnessFunction.Evaluate(this.evolver.CurrentChampGenome);
+
+            //    if (this.BoxArena.RealTime)
+            //        this.BoxArena.RealTime = false;
+
+            //    this.uiArena.ShowPreviewFlag = false;
+            //}
         }
 
         private void OnRefreshTimer(object sender, EventArgs e)

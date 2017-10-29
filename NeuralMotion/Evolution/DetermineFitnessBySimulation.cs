@@ -44,7 +44,6 @@ namespace NeuralMotion.Evolution
         {
             this.simulator.RunAsync((index, ball) =>
             {
-                ball.LoadBrain(genes);
                 ball.Position = Position(index);
             }).Wait();
 

@@ -1,14 +1,16 @@
 using System.Collections.Generic;
 using System.Drawing;
-using NeuralMotion.Intelligence;
 
 namespace NeuralMotion.Simulator
 {
     public class Ball
     {
-        public long Id { get; set; }
+        public long Id { get; }
 
-        public IBrain Brain { get; set; }
+        public Ball(long id)
+        {
+            this.Id = id;
+        }
 
         public int KicksToBorder = 0;
         public int KicksToBall = 0;
@@ -28,13 +30,7 @@ namespace NeuralMotion.Simulator
 
         private readonly List<int> collisions = new List<int>();
         
-
         public int CollisionCount => collisions.Count;
-
-        public Ball(IBrain brain)
-        {
-            this.Brain = brain;
-        }
 
         public void UnsetCollision(int collidedBallIndex)
         {
