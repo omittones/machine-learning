@@ -8,12 +8,18 @@ namespace NeuralMotion.Views
 {
     public class FitnessPlot : PlotView
     {
+        public int MaxPoints { get; set; }
+
         private LineSeries plotLoss;
         private LineSeries plotReward;
 
+        public FitnessPlot()
+        {
+            MaxPoints = 500;
+        }
+
         private void EnsureInitialized()
         {
-
             if (this.Model == null)
             {
                 this.plotLoss = new LineSeries
@@ -21,14 +27,16 @@ namespace NeuralMotion.Views
                     BrokenLineColor = OxyColors.Blue,
                     BrokenLineThickness = 1,
                     StrokeThickness = 1,
-                    YAxisKey = "loss-y"
+                    YAxisKey = "loss-y",
+                    Title = "Loss"
                 };
                 this.plotReward = new LineSeries
                 {
                     BrokenLineColor = OxyColors.Red,
                     BrokenLineThickness = 1,
                     StrokeThickness = 1,
-                    YAxisKey = "reward-y"
+                    YAxisKey = "reward-y",
+                    Title = "Reward"
                 };
 
                 this.Model = new PlotModel()
@@ -78,6 +86,11 @@ namespace NeuralMotion.Views
             {
                 this.plotLoss.Points.Add(new DataPoint(sample, loss));
                 this.plotReward.Points.Add(new DataPoint(sample, reward));
+                if (this.plotLoss.Points.Count > MaxPoints)
+                    this.plotLoss.Points.RemoveAt(0);
+                if (this.plotReward.Points.Count > MaxPoints)
+                    this.plotReward.Points.RemoveAt(0);
+
                 this.InvalidatePlot(true);
             }
         }

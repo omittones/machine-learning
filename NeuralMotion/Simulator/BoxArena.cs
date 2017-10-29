@@ -32,7 +32,7 @@ namespace NeuralMotion.Simulator
             int noBalls = 5,
             float ballRadius = 0.06f)
         {
-            noBalls = Math.Max(2, noBalls);
+            noBalls = Math.Max(1, noBalls);
 
             this.TimeStep = 0.02f;
             this.SimulationDuration = 10;
@@ -140,7 +140,7 @@ namespace NeuralMotion.Simulator
         {
             var detections = this.collisionDetector.Detect(this.EngineBalls, this.CurrentSimulationTime);
             this.TotalCollisions += detections;
-            
+
             //pokreni svaku loptu
             //zapamti jesu li u stanju kolizije
             for (var i = 0; i < this.EngineBalls.Length; i++)
@@ -156,6 +156,9 @@ namespace NeuralMotion.Simulator
                 var speedLength = speed.Length();
                 if (speedLength < this.MaximumBallSpeed)
                     ball.Speed = speed;
+
+                //friction
+                ball.Speed = ball.Speed.Scale(0.999f);
 
                 ball.Position = ball.Position.Offset(ball.Speed.Scale(this.TimeStep));
                 ball.DistanceTravelled += speedLength * this.TimeStep;
