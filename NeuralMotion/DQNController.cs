@@ -15,6 +15,7 @@ namespace NeuralMotion
     {
         public DQNTrainer Trainer { get; }
         public MovingNormalStatistics Loss { get; }
+        public MovingNormalStatistics QValues { get; }
         private MovingNormalStatistics rewardsN;
         private MovingRangeStatistics rewardsR;
 
@@ -24,13 +25,14 @@ namespace NeuralMotion
                 
         private readonly Net<double> net;
         private readonly Dictionary<long, Action> pendingAction = null;
-        private readonly Dictionary<long, double> priorReward = null;
+        private readonly Dictionary<long, double> priorKicks = null;
 
         public DQNController()
         {
             this.pendingAction = new Dictionary<long, Action>();
-            this.priorReward = new Dictionary<long, double>();
+            this.priorKicks = new Dictionary<long, double>();
             this.Loss = new MovingNormalStatistics(1000);
+            this.QValues = new MovingNormalStatistics(1000);
             this.rewardsN = new MovingNormalStatistics(1000);
             this.rewardsR = new MovingRangeStatistics(1000);
 
@@ -47,9 +49,9 @@ namespace NeuralMotion
             {
                 Alpha = 0.01,
                 ClampErrorTo = 1000.0,
-                Epsilon = 0.1,
-                Gamma = 0.1,
-                LearningStepsPerIteration = 100,
+                Epsilon = 0.05,
+                Gamma = 0.9,
+                LearningStepsPerIteration = 10,
                 ReplayMemorySize = 1000,
                 ReplayMemoryDiscardStrategy = ExperienceDiscardStrategy.First,
                 ReplaySkipCount = 0
@@ -59,19 +61,18 @@ namespace NeuralMotion
         public void Control(Ball[] arena, Ball actor)
         {
             var inputs = SelectInput(arena, actor);
-            var currentReward = GetReward(actor);
 
             if (pendingAction.TryGetValue(actor.Id, out var action))
             {
-                //var reward = currentReward - priorReward[actor.Id];
-                var reward = currentReward;
+                var reward = GetReward(actor);
+
                 Trainer.Learn(action, inputs, reward);
+
                 Loss.Push(Trainer.Loss);
+                QValues.Push(Trainer.QValue);
                 rewardsR.Push(reward);
                 rewardsN.Push(reward);
             }
-
-            priorReward[actor.Id] = currentReward;
 
             action = Trainer.Act(inputs);
             pendingAction[actor.Id] = action;
@@ -81,10 +82,18 @@ namespace NeuralMotion
 
         public double GetReward(Ball actor)
         {
-            return 1 / (actor.Position.Distance(0, 0) + 1);
+            if (!priorKicks.TryGetValue(actor.Id, out var kicks))
+                kicks = 0;
 
-            var totalKicks = actor.KicksToBorder + actor.KicksToBall + actor.KicksFromBall;
-            return (actor.DistanceTravelled - actor.Energy - totalKicks * 5);
+            double reward;
+            if (kicks < actor.KicksToBorder)
+                reward = -0.1;
+            else
+                reward = 0.1;
+
+            priorKicks[actor.Id] = actor.KicksToBorder;
+
+            return reward;
         }
 
         public int InputLength => 8;

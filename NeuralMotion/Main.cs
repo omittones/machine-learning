@@ -4,7 +4,6 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 using NeuralMotion.Simulator;
 using Util;
-using System.Linq;
 
 namespace NeuralMotion
 {
@@ -23,8 +22,8 @@ namespace NeuralMotion
             this.Controller = new DQNController();
             this.BoxArena = new BoxArena(Controller, 1, 0.2f)
             {
-                LimitSimulationDuration = 20000,
-                RealTime = true
+                LimitSimulationDuration = null,
+                RealTime = false
             };
 
             InitializeComponent();
@@ -94,6 +93,7 @@ namespace NeuralMotion
                 if (uiSettings.ShowBallStatus)
                 {
                     Console.WriteLine($"   - Replay Size: {trainer.ReplayMemorySize}");
+                    Console.WriteLine($"   - QValue: {Controller.QValues.Mean:0.000} / {Controller.QValues.StandardDeviation:0.000}");
                 }
 
                 this.uiFitnessPlot.AddPoint(trainer.Samples, Controller.Loss.Mean, Controller.MeanReward);
