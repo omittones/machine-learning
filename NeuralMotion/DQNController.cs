@@ -29,9 +29,9 @@ namespace NeuralMotion
 
             this.net = new Net<double>();
             this.net.AddLayer(new InputLayer(1, 1, this.InputLength));
-            this.net.AddLayer(new FullyConnLayer(50));
+            this.net.AddLayer(new FullyConnLayer(300));
             this.net.AddLayer(new LeakyReluLayer());
-            this.net.AddLayer(new FullyConnLayer(50));
+            this.net.AddLayer(new FullyConnLayer(100));
             this.net.AddLayer(new LeakyReluLayer());
             this.net.AddLayer(new FullyConnLayer(50));
             this.net.AddLayer(new LeakyReluLayer());
@@ -42,10 +42,10 @@ namespace NeuralMotion
             {
                 Alpha = 0.01,
                 ClampErrorTo = 1000.0,
-                Epsilon = 0.05,
-                Gamma = 0.9,
+                Epsilon = 0.5,
+                Gamma = 0.5,
                 LearningStepsPerIteration = 10,
-                ReplayMemorySize = 1000,
+                ReplayMemorySize = 100000,
                 ReplayMemoryDiscardStrategy = ExperienceDiscardStrategy.First,
                 ReplaySkipCount = 0
             };
@@ -55,50 +55,60 @@ namespace NeuralMotion
         {
             var inputs = SelectInput(arena, actor);
 
-            if (pendingAction.TryGetValue(actor.Id, out var action))
+            if (actor.Id == 0)
             {
-                var reward = GetReward(actor);
+                if (pendingAction.TryGetValue(actor.Id, out var action))
+                {
+                    var reward = GetReward(arena, actor);
 
-                Trainer.Learn(action, inputs, reward);
+                    Trainer.Learn(action, inputs, reward);
 
-                Loss.Push(Trainer.Loss);
-                QValues.Push(Trainer.QValue);
-                Rewards.Push(reward);
+                    Loss.Push(Trainer.Loss);
+                    QValues.Push(Trainer.QValue);
+                    Rewards.Push(reward);
+                }
+
+                action = Trainer.Act(inputs);
+                pendingAction[actor.Id] = action;
+
+                HandleOutput(actor, action.Decision);
             }
-
-            action = Trainer.Act(inputs);
-            pendingAction[actor.Id] = action;
-
-            HandleOutput(actor, action.Decision);
+            else
+            {
+                var action = Trainer.Act(inputs);
+                HandleOutput(actor, action.Decision);
+            }
         }
 
-        public double GetReward(Ball actor)
+        public double GetReward(Ball[] arena, Ball actor)
         {
             double reward;
             var totalKicks = actor.KicksToBorder + actor.KicksToBall;
             if (totalKicks > 0)
-                reward = -totalKicks * 4;
+                reward = -totalKicks * 6;
             else
-                reward = actor.DistanceTravelled;
+                reward = actor.DistanceTravelled * 2;
 
             actor.Reset();
 
             return reward;
         }
 
-        public int InputLength => 8;
+        public int InputLength => 32;
         public double[] SelectInput(Ball[] arena, Ball actor)
         {
-            var closestBalls = arena
+            var neighbours = arena
+                .Where(b => b.Id != actor.Id)
                 .OrderBy(b => b.Position.Distance(actor.Position))
-                .Take(4)
+                .Select(b => new double[] {
+                    b.Position.X,
+                    b.Position.Y,
+                    b.Speed.X,
+                    b.Speed.Y
+                })
+                .Take(6)
+                .SelectMany(b => b)
                 .ToArray();
-            Debug.Assert(object.ReferenceEquals(closestBalls[0], actor));
-
-            //var polarClosest = closestBalls
-            //    .Skip(1)
-            //    .Select(b => b.Position.RelativeTo(actor.Position))
-            //    .ToArray();
 
             var selection = new double[]
             {
@@ -109,14 +119,12 @@ namespace NeuralMotion
                 1 - actor.Position.Y,
                 actor.Position.Y + 1,
                 actor.Speed.X,
-                actor.Speed.Y,
-                //polarClosest[0].X,
-                //polarClosest[0].Y,
-                //polarClosest[1].X,
-                //polarClosest[1].Y,
-                //polarClosest[2].X,
-                //polarClosest[2].Y
+                actor.Speed.Y
             };
+
+            selection = selection
+                .Concat(neighbours)
+                .ToArray();
 
             Debug.Assert(selection.Length == this.InputLength);
 

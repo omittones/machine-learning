@@ -34,6 +34,7 @@
             this.uiShowBallStatusText = new System.Windows.Forms.CheckBox();
             this.uiIncreaseLearningRate = new System.Windows.Forms.Button();
             this.uiDecreaseLearningRate = new System.Windows.Forms.Button();
+            this.uiToggleExploration = new System.Windows.Forms.Button();
             this.SuspendLayout();
             // 
             // uiToggleSpeed
@@ -96,11 +97,22 @@
             this.uiDecreaseLearningRate.Text = "Dec LR";
             this.uiDecreaseLearningRate.UseVisualStyleBackColor = true;
             // 
+            // uiExplorationOnOff
+            // 
+            this.uiToggleExploration.Location = new System.Drawing.Point(98, 166);
+            this.uiToggleExploration.Name = "uiExplorationOnOff";
+            this.uiToggleExploration.Size = new System.Drawing.Size(156, 30);
+            this.uiToggleExploration.TabIndex = 8;
+            this.uiToggleExploration.Text = "Exploration == On";
+            this.uiToggleExploration.UseVisualStyleBackColor = true;
+            this.uiToggleExploration.Click += new System.EventHandler(this.ToggleExploration);
+            // 
             // Settings
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 16F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(266, 241);
+            this.Controls.Add(this.uiToggleExploration);
             this.Controls.Add(this.uiDecreaseLearningRate);
             this.Controls.Add(this.uiIncreaseLearningRate);
             this.Controls.Add(this.uiShowBallStatusText);
@@ -126,5 +138,6 @@
         private System.Windows.Forms.CheckBox uiShowBallStatusText;
         private System.Windows.Forms.Button uiIncreaseLearningRate;
         private System.Windows.Forms.Button uiDecreaseLearningRate;
+        private System.Windows.Forms.Button uiToggleExploration;
     }
 }

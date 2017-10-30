@@ -20,7 +20,7 @@ namespace NeuralMotion
         public Main()
         {
             this.Controller = new DQNController();
-            this.BoxArena = new BoxArena(Controller, 1, 0.2f)
+            this.BoxArena = new BoxArena(Controller, 10, 0.06f)
             {
                 LimitSimulationDuration = null,
                 RealTime = false
@@ -92,7 +92,7 @@ namespace NeuralMotion
                 Console.WriteLine($"{trainer.Samples:0000}   LOSS: {Controller.Loss.Mean:0.00000000}   REWARDS: {rewardRange}");
                 if (uiSettings.ShowBallStatus)
                 {
-                    Console.WriteLine($"   - Replay Size: {trainer.ReplayMemorySize}");
+                    Console.WriteLine($"   - Replay count: {trainer.ReplayMemoryCount}");
                     Console.WriteLine($"   - QValue mean: {Controller.QValues.Mean:0.000} / {Controller.QValues.StandardDeviation:0.000}");
                     Console.WriteLine($"   - QValue range: {Controller.QValues.Min:0.000} ... {Controller.QValues.Max:0.000}");
                 }

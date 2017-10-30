@@ -20,7 +20,6 @@ namespace NeuralMotion
             this.uiToggleSpeed.Text = "Fast";
             this.uiDecreaseLearningRate.Click += DecreaseLearningRate;
             this.uiIncreaseLearningRate.Click += IncreaseLearningRate;
-
         }
 
         private void NotifyAboutLR()
@@ -49,6 +48,11 @@ namespace NeuralMotion
             else
                 uiToggleSpeed.Text = "Slow";
 
+            if (Owner.Controller.Trainer.Epsilon == 0)
+                uiToggleExploration.Text = "Exploration == Off";
+            else
+                uiToggleExploration.Text = "Exploration == On";
+
             base.OnPaint(e);
         }
 
@@ -66,6 +70,20 @@ namespace NeuralMotion
             base.OnLoad(e);
 
             this.Owner = (Main) base.Owner;
+        }
+
+        double oldExp;
+        private void ToggleExploration(object sender, EventArgs e)
+        {
+            if (Owner.Controller.Trainer.Epsilon == 0)
+            {
+                Owner.Controller.Trainer.Epsilon = oldExp;
+            }
+            else
+            {
+                oldExp = Owner.Controller.Trainer.Epsilon;
+                Owner.Controller.Trainer.Epsilon = 0;
+            }
         }
     }
 }
