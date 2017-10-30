@@ -88,15 +88,16 @@ namespace NeuralMotion
 
             if (this.simulation.Status == TaskStatus.Running)
             {
-                var rewardRange = $"{Controller.MinReward:0.000} ... {Controller.MeanReward:0.000} ... {Controller.MaxReward:0.000}";
+                var rewardRange = $"{Controller.Rewards.Min:0.000} ... {Controller.Rewards.Mean:0.000} ... {Controller.Rewards.Max:0.000}";
                 Console.WriteLine($"{trainer.Samples:0000}   LOSS: {Controller.Loss.Mean:0.00000000}   REWARDS: {rewardRange}");
                 if (uiSettings.ShowBallStatus)
                 {
                     Console.WriteLine($"   - Replay Size: {trainer.ReplayMemorySize}");
-                    Console.WriteLine($"   - QValue: {Controller.QValues.Mean:0.000} / {Controller.QValues.StandardDeviation:0.000}");
+                    Console.WriteLine($"   - QValue mean: {Controller.QValues.Mean:0.000} / {Controller.QValues.StandardDeviation:0.000}");
+                    Console.WriteLine($"   - QValue range: {Controller.QValues.Min:0.000} ... {Controller.QValues.Max:0.000}");
                 }
 
-                this.uiFitnessPlot.AddPoint(trainer.Samples, Controller.Loss.Mean, Controller.MeanReward);
+                this.uiFitnessPlot.AddPoint(trainer.Samples, Controller.Loss.Mean, Controller.Rewards.Mean);
             }
             else
             {

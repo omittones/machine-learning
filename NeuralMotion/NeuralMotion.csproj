@@ -106,6 +106,7 @@
     <Compile Include="Intelligence\AForgeBrain.cs" />
     <Compile Include="Intelligence\ConvNetBrain.cs" />
     <Compile Include="Intelligence\IController.cs" />
+    <Compile Include="MovingStatistics.cs" />
     <Compile Include="Views\BallDisplay.cs">
       <SubType>UserControl</SubType>
     </Compile>

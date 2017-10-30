@@ -7,40 +7,33 @@ using ConvNetSharp.Core;
 using System.Diagnostics;
 using ConvNetSharp.Core.Layers.Double;
 using ConvNetSharp.Core.Training;
-using Accord.Statistics.Moving;
 
 namespace NeuralMotion
 {
     public class DQNController : IController
     {
         public DQNTrainer Trainer { get; }
-        public MovingNormalStatistics Loss { get; }
-        public MovingNormalStatistics QValues { get; }
-        private MovingNormalStatistics rewardsN;
-        private MovingRangeStatistics rewardsR;
+        public MovingStatistics Loss { get; }
+        public MovingStatistics QValues { get; }
+        public MovingStatistics Rewards { get; }
 
-        public double MinReward => rewardsR.Min;
-        public double MaxReward => rewardsR.Max;
-        public double MeanReward => rewardsN.Mean;
-                
         private readonly Net<double> net;
         private readonly Dictionary<long, Action> pendingAction = null;
-        private readonly Dictionary<long, double> priorKicks = null;
 
         public DQNController()
         {
             this.pendingAction = new Dictionary<long, Action>();
-            this.priorKicks = new Dictionary<long, double>();
-            this.Loss = new MovingNormalStatistics(1000);
-            this.QValues = new MovingNormalStatistics(1000);
-            this.rewardsN = new MovingNormalStatistics(1000);
-            this.rewardsR = new MovingRangeStatistics(1000);
+            this.Loss = new MovingStatistics(1000);
+            this.QValues = new MovingStatistics(1000);
+            this.Rewards = new MovingStatistics(1000);
 
             this.net = new Net<double>();
             this.net.AddLayer(new InputLayer(1, 1, this.InputLength));
             this.net.AddLayer(new FullyConnLayer(50));
             this.net.AddLayer(new LeakyReluLayer());
-            this.net.AddLayer(new FullyConnLayer(20));
+            this.net.AddLayer(new FullyConnLayer(50));
+            this.net.AddLayer(new LeakyReluLayer());
+            this.net.AddLayer(new FullyConnLayer(50));
             this.net.AddLayer(new LeakyReluLayer());
             this.net.AddLayer(new FullyConnLayer(OutputLength));
             this.net.AddLayer(new RegressionLayer());
@@ -70,8 +63,7 @@ namespace NeuralMotion
 
                 Loss.Push(Trainer.Loss);
                 QValues.Push(Trainer.QValue);
-                rewardsR.Push(reward);
-                rewardsN.Push(reward);
+                Rewards.Push(reward);
             }
 
             action = Trainer.Act(inputs);
@@ -82,16 +74,14 @@ namespace NeuralMotion
 
         public double GetReward(Ball actor)
         {
-            if (!priorKicks.TryGetValue(actor.Id, out var kicks))
-                kicks = 0;
-
             double reward;
-            if (kicks < actor.KicksToBorder)
-                reward = -0.1;
+            var totalKicks = actor.KicksToBorder + actor.KicksToBall;
+            if (totalKicks > 0)
+                reward = -totalKicks * 4;
             else
-                reward = 0.1;
+                reward = actor.DistanceTravelled;
 
-            priorKicks[actor.Id] = actor.KicksToBorder;
+            actor.Reset();
 
             return reward;
         }

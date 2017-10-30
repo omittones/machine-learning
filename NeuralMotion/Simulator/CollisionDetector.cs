@@ -1,4 +1,4 @@
-using System;
+Ôªøusing System;
 using System.Drawing;
 using System.Linq;
 using Util;
@@ -20,7 +20,7 @@ namespace NeuralMotion.Simulator
             var minDistanceBetweenBalls = this.BallRadius*2;
 
             //ako obradimo jednu loptu, obradili smo je za sve ostale
-            //pa kad obraujemo ostale lopte moûemo nju preskoËiti
+            //pa kad obra√∞ujemo ostale lopte mo≈æemo nju presko√®iti
             if (ballIsProcessed == null || ballIsProcessed.Length != balls.Length)
             {
                 this.ballIsProcessed = new bool[balls.Length];
@@ -30,7 +30,7 @@ namespace NeuralMotion.Simulator
                 this.distanceTillDetection.SetAll(0);
             }
 
-            //ovo je granica ploËe, za odbijanje loptica
+            //ovo je granica ploƒçe, za odbijanje loptica
             var limit = 0.99f - this.BallRadius;
 
             var totalCount = 0;
@@ -51,7 +51,7 @@ namespace NeuralMotion.Simulator
                 ballIsProcessed[xFirst] = true;
                 lastCollDetections[xFirst] = first.Position;
 
-                //svaki doticaj sa zidom se takoer raËuna kao kolizija
+                //svaki doticaj sa zidom se tako√∞er ra√®una kao kolizija
                 if (!first.Position.X.IsInside(-limit, limit))
                 {
                     first.KicksToBorder++;
@@ -81,7 +81,7 @@ namespace NeuralMotion.Simulator
                         continue;
                     }
 
-                    //ako je obraena druga znaËi da je ne trebamo ponovo provjeravat
+                    //ako je obraƒëena druga zna√®i da je ne trebamo ponovo provjeravat
                     if (ballIsProcessed[xSecond])
                         continue;
 
@@ -94,14 +94,14 @@ namespace NeuralMotion.Simulator
                     //adjust position in case balls intersect
                     if (ballDistance <= minDistanceBetweenBalls)
                     {
-                        var diff = (minDistanceBetweenBalls - ballDistance)/minDistanceBetweenBalls;
+                        var diff = (minDistanceBetweenBalls - ballDistance) / minDistanceBetweenBalls;
                         first.Position = first.Position.Offset(bounceVector.Scale(-diff));
                         second.Position = second.Position.Offset(bounceVector.Scale(diff));
 
                         //ovjde ne lockamo jer se kolizije koriste samo u ovom threadu
                         //zapamti sve kolizije, a reagiraj samo na prvu                        
-                        var bounceSpeed = (first.Speed.Length() + second.Speed.Length())/4.0f;
-                        bounceVector = bounceVector.Scale(1/ballDistance*bounceSpeed, 1/ballDistance*bounceSpeed);
+                        var bounceSpeed = (first.Speed.Length() + second.Speed.Length()) / 4.0f;
+                        bounceVector = bounceVector.Scale(1 / ballDistance * bounceSpeed, 1 / ballDistance * bounceSpeed);
                         bounceVector = bounceVector.Scale(ElasticFactor);
 
                         //samo ako je nekome od njih prva kolizija, uracunaj je u total count
@@ -121,7 +121,7 @@ namespace NeuralMotion.Simulator
                             else
                                 first.KicksFromBall++;
                         }
-                        first.SetCollision(xSecond, currentTime);
+                        first.SetCollision(second, currentTime);
 
                         //samo ako je prva kolizija promijeni smijer
                         if (second.CollisionCount == 0)
@@ -133,12 +133,12 @@ namespace NeuralMotion.Simulator
                             else
                                 second.KicksToBall++;
                         }
-                        second.SetCollision(xFirst, currentTime);
+                        second.SetCollision(first, currentTime);
                     }
                     else
                     {
-                        first.UnsetCollision(xSecond);
-                        second.UnsetCollision(xFirst);
+                        first.UnsetCollision(second);
+                        second.UnsetCollision(first);
                     }
 
                     //recalculate ball distance

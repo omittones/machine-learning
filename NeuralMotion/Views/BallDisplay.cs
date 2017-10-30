@@ -13,9 +13,10 @@ namespace NeuralMotion.Views
         public bool ShowKicks { get; set; }
         public bool ShowSpeed { get; set; }
 
-        private readonly Pen penRed = new Pen(Color.Red);
-        private readonly Pen penBlue = new Pen(Color.Blue);
-        private readonly Pen penGreen = new Pen(Color.Green);
+        private Pen penBall;
+        private Pen penCollision;
+        private Pen penIndicators;
+        private Pen penBorder;
         private Font fontText;
         
         public BoxArena Arena { get; set; }
@@ -38,9 +39,10 @@ namespace NeuralMotion.Views
 
             if (this.Arena != null)
             {
-                this.penRed.Width = this.Arena.BallRadius / 5;
-                this.penBlue.Width = this.penRed.Width;
-                this.penGreen.Width = 0.005f;
+                this.penBall = new Pen(Color.Red, this.Arena.BallRadius / 5);
+                this.penCollision = new Pen(Color.Blue, this.penBall.Width);
+                this.penIndicators = new Pen(Color.Green, 0.005f);
+                this.penBorder = new Pen(Color.LightGray, 0.010f);
                 this.fontText = new Font(FontFamily.GenericSansSerif, this.Arena.BallRadius / 2, FontStyle.Regular, GraphicsUnit.Point);
             }
         }
@@ -83,28 +85,29 @@ namespace NeuralMotion.Views
                 var halfRadius = Arena.BallRadius;
 
                 var time = $"{this.Arena.CurrentSimulationTime} {(ShowPreviewFlag ? "PREVIEW" : "")}";
-                e.Graphics.DrawString(time, this.fontText, penRed.Brush, new PointF(-0.9f, -0.9f));
+                e.Graphics.DrawString(time, this.fontText, penBall.Brush, new PointF(-0.9f, -0.9f));
 
                 var point = new PointF(0, 0);
-                e.Graphics.DrawLine(penRed, point.Offset(-0.1f, 0), point.Offset(0.1f, 0));
-                e.Graphics.DrawLine(penRed, point.Offset(0, -0.1f), point.Offset(0, 0.1f));
+                e.Graphics.DrawLine(penBall, point.Offset(-0.1f, 0), point.Offset(0.1f, 0));
+                e.Graphics.DrawLine(penBall, point.Offset(0, -0.1f), point.Offset(0, 0.1f));
+                e.Graphics.DrawRectangle(penBorder, -1, -1, 2, 2);
 
                 for (var index = 0; index < Arena.EngineBalls.Length; index++)
                 {
                     var ball = Arena.EngineBalls[index];
                     point = Arena.EngineBalls[index].Position;
 
-                    e.Graphics.DrawLine(penGreen, point, point.Offset(ball.Acceleration));
+                    e.Graphics.DrawLine(penIndicators, point, point.Offset(ball.Acceleration));
 
                     if (Arena.CurrentSimulationTime - ball.LastCollisionTime < 0.1)
-                        e.Graphics.DrawEllipse(penBlue, point.X - halfRadius, point.Y - halfRadius, radius, radius);
+                        e.Graphics.DrawEllipse(penCollision, point.X - halfRadius, point.Y - halfRadius, radius, radius);
                     else
-                        e.Graphics.DrawEllipse(penRed, point.X - halfRadius, point.Y - halfRadius, radius, radius);
+                        e.Graphics.DrawEllipse(penBall, point.X - halfRadius, point.Y - halfRadius, radius, radius);
 
                     var text = RenderBallText(ball);
                     if (text.Length > 0)
                     {
-                        e.Graphics.DrawString(text, fontText, penRed.Brush, point.Offset(-radius, halfRadius * 1.1f));
+                        e.Graphics.DrawString(text, fontText, penBall.Brush, point.Offset(-radius, halfRadius * 1.1f));
                     }
                 }
             }

@@ -28,19 +28,23 @@ namespace NeuralMotion.Simulator
         public float DistanceTravelled;
         public float Energy;
 
-        private readonly List<int> collisions = new List<int>();
+        private readonly HashSet<long> collisions = new HashSet<long>();
         
         public int CollisionCount => collisions.Count;
 
-        public void UnsetCollision(int collidedBallIndex)
+        public void UnsetCollision(Ball collidedBall)
         {
-            collisions.Remove(collidedBallIndex);
+            collisions.Remove(collidedBall.Id);
         }
 
-        public void SetCollision(int collidedBallIndex, float currentTime)
+        public void SetCollision(Ball collidedBall, float currentTime)
         {
-            if (!collisions.Contains(collidedBallIndex))
-                collisions.Add(collidedBallIndex);
+            if (collidedBall.Id == this.Id)
+                return;
+
+            if (!collisions.Contains(collidedBall.Id))
+                collisions.Add(collidedBall.Id);
+
             this.LastCollisionTime = currentTime;
         }
 
