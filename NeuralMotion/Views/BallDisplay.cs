@@ -73,6 +73,8 @@ namespace NeuralMotion.Views
             if (this.Arena != null)
             {
                 var smallerClientSize = Math.Min(this.ClientSize.Width, this.ClientSize.Height);
+                var center = (this.ClientSize.Width - smallerClientSize) / 2.0f;
+                e.Graphics.TranslateTransform(center, 0);
                 e.Graphics.ScaleTransform(smallerClientSize, smallerClientSize);
                 e.Graphics.ScaleTransform(0.5f, 0.5f);
                 e.Graphics.TranslateTransform(1.0f, 1.0f);

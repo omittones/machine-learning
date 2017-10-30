@@ -12,18 +12,18 @@ namespace NeuralMotion
     {
         private static readonly Random rnd = new Random();
         private readonly Settings uiSettings;
-        private readonly DQNController controller;
         private bool closing;
         private Task simulation;
 
         public BoxArena BoxArena { get; private set; }
+        public DQNController Controller { get; private set; }
 
         public Main()
         {
-            this.controller = new DQNController();
-            this.BoxArena = new BoxArena(controller, 1, 0.2f)
+            this.Controller = new DQNController();
+            this.BoxArena = new BoxArena(Controller, 1, 0.2f)
             {
-                SimulationDuration = 20000,
+                LimitSimulationDuration = 20000,
                 RealTime = true
             };
 
@@ -85,17 +85,18 @@ namespace NeuralMotion
 
         private void ShowInfo(object sender, EventArgs args)
         {
-            var trainer = controller.Trainer;
+            var trainer = Controller.Trainer;
 
             if (this.simulation.Status == TaskStatus.Running)
             {
-                Console.WriteLine($"{trainer.Samples:0000}   LOSS: {controller.Loss.Mean:0.00000000}   REWARDS:{controller.Reward.Mean:0.0000}");
+                var rewardRange = $"{Controller.MinReward:0.000} ... {Controller.MeanReward:0.000} ... {Controller.MaxReward:0.000}";
+                Console.WriteLine($"{trainer.Samples:0000}   LOSS: {Controller.Loss.Mean:0.00000000}   REWARDS: {rewardRange}");
                 if (uiSettings.ShowBallStatus)
                 {
                     Console.WriteLine($"   - Replay Size: {trainer.ReplayMemorySize}");
                 }
 
-                this.uiFitnessPlot.AddPoint(trainer.Samples, controller.Loss.Mean, controller.Reward.Mean);
+                this.uiFitnessPlot.AddPoint(trainer.Samples, Controller.Loss.Mean, Controller.MeanReward);
             }
             else
             {

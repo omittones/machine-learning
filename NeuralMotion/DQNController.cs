@@ -15,8 +15,13 @@ namespace NeuralMotion
     {
         public DQNTrainer Trainer { get; }
         public MovingNormalStatistics Loss { get; }
-        public MovingNormalStatistics Reward { get; }
-        
+        private MovingNormalStatistics rewardsN;
+        private MovingRangeStatistics rewardsR;
+
+        public double MinReward => rewardsR.Min;
+        public double MaxReward => rewardsR.Max;
+        public double MeanReward => rewardsN.Mean;
+                
         private readonly Net<double> net;
         private readonly Dictionary<long, Action> pendingAction = null;
         private readonly Dictionary<long, double> priorReward = null;
@@ -26,7 +31,8 @@ namespace NeuralMotion
             this.pendingAction = new Dictionary<long, Action>();
             this.priorReward = new Dictionary<long, double>();
             this.Loss = new MovingNormalStatistics(1000);
-            this.Reward = new MovingNormalStatistics(1000);
+            this.rewardsN = new MovingNormalStatistics(1000);
+            this.rewardsR = new MovingRangeStatistics(1000);
 
             this.net = new Net<double>();
             this.net.AddLayer(new InputLayer(1, 1, this.InputLength));
@@ -39,7 +45,7 @@ namespace NeuralMotion
 
             this.Trainer = new DQNTrainer(net, OutputLength)
             {
-                Alpha = 0.001,
+                Alpha = 0.01,
                 ClampErrorTo = 1000.0,
                 Epsilon = 0.1,
                 Gamma = 0.1,
@@ -61,7 +67,8 @@ namespace NeuralMotion
                 var reward = currentReward;
                 Trainer.Learn(action, inputs, reward);
                 Loss.Push(Trainer.Loss);
-                Reward.Push(reward);
+                rewardsR.Push(reward);
+                rewardsN.Push(reward);
             }
 
             priorReward[actor.Id] = currentReward;
@@ -72,12 +79,12 @@ namespace NeuralMotion
             HandleOutput(actor, action.Decision);
         }
 
-        public double GetReward(Ball ball)
+        public double GetReward(Ball actor)
         {
-            return (1 / (ball.Position.Distance(0, 0) + 1)) * 10.0;
+            return 1 / (actor.Position.Distance(0, 0) + 1);
 
-            var totalKicks = ball.KicksToBorder + ball.KicksToBall + ball.KicksFromBall;
-            return (ball.DistanceTravelled - ball.Energy - totalKicks * 5);
+            var totalKicks = actor.KicksToBorder + actor.KicksToBall + actor.KicksFromBall;
+            return (actor.DistanceTravelled - actor.Energy - totalKicks * 5);
         }
 
         public int InputLength => 8;

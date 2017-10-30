@@ -16,7 +16,7 @@ namespace NeuralMotion.Simulator
         public int TotalCollisions { get; private set; }
 
         public bool RealTime { set; get; }
-        public float SimulationDuration { get; set; }
+        public float? LimitSimulationDuration { get; set; }
 
         public float MaximumBallSpeed
         {
@@ -35,7 +35,7 @@ namespace NeuralMotion.Simulator
             noBalls = Math.Max(1, noBalls);
 
             this.TimeStep = 0.02f;
-            this.SimulationDuration = 10;
+            this.LimitSimulationDuration = 10;
             this.RealTime = true;
             this.BallRadius = ballRadius;
 
@@ -95,7 +95,8 @@ namespace NeuralMotion.Simulator
         {
             try
             {
-                while (this.CurrentSimulationTime < this.SimulationDuration)
+                while (!this.LimitSimulationDuration.HasValue ||
+                        this.CurrentSimulationTime < this.LimitSimulationDuration)
                 {
                     var start = DateTime.UtcNow;
 
@@ -114,12 +115,10 @@ namespace NeuralMotion.Simulator
                     }
                 }
 
-                this.CurrentSimulationTime = this.SimulationDuration;
                 this.task = null;
             }
             catch (Exception ex)
             {
-                this.CurrentSimulationTime = SimulationDuration;
                 Console.WriteLine(ex.Message);
                 throw;
             }

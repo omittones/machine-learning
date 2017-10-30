@@ -7,6 +7,10 @@ namespace NeuralMotion
     {
         public new Main Owner { get; private set; }
 
+        public bool WriteStatus => uiWriteLog.Checked;
+        public bool DontShowSim => uiDontShowSim.Checked;
+        public bool ShowBallStatus => uiShowBallStatusText.Checked;
+        
         public Settings()
         {
             InitializeComponent();
@@ -14,14 +18,30 @@ namespace NeuralMotion
             this.uiToggleSpeed.Click += OnToggleSpeed;
             this.uiWriteLog.Checked = true;
             this.uiToggleSpeed.Text = "Fast";
-        }
-        
-        public bool WriteStatus => uiWriteLog.Checked;
-        public bool DontPreviewBest => uiDontPreviewBest.Checked;
-        public bool EnableNetExpansion => uiEnableNetExpansion.Checked;
-        public bool DontShowSim => uiDontShowSim.Checked;
-        public bool ShowBallStatus => uiShowBallStatusText.Checked;
+            this.uiDecreaseLearningRate.Click += DecreaseLearningRate;
+            this.uiIncreaseLearningRate.Click += IncreaseLearningRate;
 
+        }
+
+        private void NotifyAboutLR()
+        {
+            Console.WriteLine($"Adjusting LR to {Owner.Controller.Trainer.Alpha:0.0000000}");
+        }
+
+        private void IncreaseLearningRate(object sender, EventArgs e)
+        {
+            Owner.Controller.Trainer.Alpha *= 1.5;
+            NotifyAboutLR();
+        }
+
+        private void DecreaseLearningRate(object sender, EventArgs e)
+        {
+            Owner.Controller.Trainer.Alpha /= 1.5;
+            if (Owner.Controller.Trainer.Alpha < 0.000001)
+                Owner.Controller.Trainer.Alpha = 0.000001;
+            NotifyAboutLR();
+        }
+                
         protected override void OnPaint(PaintEventArgs e)
         {
             if (Owner.BoxArena.RealTime)
