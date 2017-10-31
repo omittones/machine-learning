@@ -44,7 +44,7 @@ namespace NeuralMotion
                 ClampErrorTo = 1000.0,
                 Epsilon = 0.5,
                 Gamma = 0.5,
-                LearningStepsPerIteration = 10,
+                ReplaysPerIteration = 10,
                 ReplayMemorySize = 100000,
                 ReplayMemoryDiscardStrategy = ExperienceDiscardStrategy.First,
                 ReplaySkipCount = 0

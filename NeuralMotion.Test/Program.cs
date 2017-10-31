@@ -22,14 +22,14 @@ namespace NeuralMotion.Test
         {
             var net = new Net<double>();
             net.AddLayer(new InputLayer(1, 1, 2));
+            net.AddLayer(new FullyConnLayer(20));
+            net.AddLayer(new LeakyReluLayer());
             net.AddLayer(new FullyConnLayer(10));
             net.AddLayer(new LeakyReluLayer());
-            net.AddLayer(new FullyConnLayer(5));
-            net.AddLayer(new LeakyReluLayer());
             net.AddLayer(new FullyConnLayer(2));
-            net.AddLayer(new SigmoidLayer());
-            net.AddLayer(new RegressionLayer());
-
+            net.AddLayer(new ReinforcementSoftmaxLayer(2));
+            //net.AddLayer(new RegressionLayer());
+            
             var task = Task.Run(() =>
             {
                 Application.EnableVisualStyles();
@@ -43,25 +43,96 @@ namespace NeuralMotion.Test
 
             ShowAccuracy(rnd, net);
 
-            RunQLearning(net, task, rnd);
+            RunPolicyGradients(net, task, rnd);
+            //RunQLearning(net, task, rnd);
             //RunGenetic(net, task, rnd);
 
             task.Wait();
         }
 
+        private static void RunPolicyGradients(Net<double> net, Task task, Random rnd)
+        {
+            var loss = new MovingStatistics(1000);
+            var pgTrainer = new ReinforcementTrainer(net, rnd)
+            {
+                BatchSize = 10,
+                Momentum = 0,
+                L2Decay = 0,
+                L1Decay = 0,
+                LearningRate = 0.1
+            };
+
+            var inputs = BuilderInstance<double>.Volume.SameAs(Shape.From(1, 1, 2, pgTrainer.BatchSize));
+            int epoch = 0;
+            while (task.Status == TaskStatus.Running)
+            {
+                if (Console.KeyAvailable)
+                {
+                    var key = Console.ReadKey(true);
+                    if (key.Key == ConsoleKey.Enter)
+                        break;
+
+                    if (key.Key == ConsoleKey.A)
+                    {
+                        ShowAccuracy(rnd, net);
+                        Thread.Sleep(500);
+                    }
+                    else
+                    {
+                        if (key.Key == ConsoleKey.UpArrow)
+                            pgTrainer.LearningRate *= 1.5;
+                        if (key.Key == ConsoleKey.DownArrow)
+                            pgTrainer.LearningRate /= 1.5;
+
+                        if (pgTrainer.LearningRate > 0.9)
+                            pgTrainer.LearningRate = 0.9;
+
+                        Console.WriteLine($"LR: {pgTrainer.LearningRate:0.000000}");
+                        Thread.Sleep(500);
+                    }
+                }
+
+                var rewards = new double[pgTrainer.BatchSize];
+                lock (net)
+                {
+                    inputs.MapInplace(v => rnd.NextDouble());
+
+                    var expected = GetClasses(inputs);
+                    var predicted = pgTrainer.Act(inputs);
+
+                    var reward = expected
+                        .Zip(predicted, (e, p) => e == p ? 1 : -1)
+                        .Sum() / rewards.Length;
+
+                    for (var r = 0; r < rewards.Length; r++)
+                        rewards[r] = reward;
+
+                    pgTrainer.Reinforce(inputs, predicted, rewards);
+
+                    epoch++;
+                }
+
+                loss.Push(pgTrainer.Loss);
+
+                Console.WriteLine($"{epoch:0000} LOSS: {loss.Mean:0.000000000}");
+            }
+        }
+
         private static void RunQLearning(Net<double> net, Task task, Random rnd)
         {
-            var loss = new List<double>();
+            var loss = new MovingStatistics(1000);
+            var qvalues = new MovingStatistics(1000);
             var inputs = new double[] { 0, 0 };
             var qLearner = new DQNTrainer(net, 2)
             {
-                Alpha = 0.01,
+                Alpha = 0.001,
                 Epsilon = 0.1,
                 ReplaySkipCount = 1,
-                ReplayMemorySize = 1000,
+                ReplayMemorySize = 10000,
+                ReplayMemoryDiscardStrategy = ExperienceDiscardStrategy.First,
+                ReplaysPerIteration = 100,
                 Gamma = 0,
-                LearningStepsPerIteration = 100,
-                ClampErrorTo = double.MaxValue
+                ClampErrorTo = double.MaxValue                
             };
 
             while (task.Status == TaskStatus.Running)
@@ -101,20 +172,17 @@ namespace NeuralMotion.Test
 
                         var predictedAction = qLearner.Act(inputs.ToArray());
 
-                        var reward = expectedActions[0] == predictedAction.Decision ? 1.0 : 0.0;
+                        var reward = expectedActions[0] == predictedAction.Decision ? 1.0 : -1.0;
 
                         qLearner.Learn(predictedAction, inputs.ToArray(), reward);
                     }
                 }
 
-                loss.Add(qLearner.Loss);
-                if (loss.Count > 1000)
-                    loss.RemoveAt(0);
-
+                loss.Push(qLearner.Loss);
+                qvalues.Push(qLearner.QValue);
                 if (qLearner.Samples % 100 == 0)
                 {
-                    var accuracy = GetAccuracy(rnd, net);
-                    Console.WriteLine($"{qLearner.Samples:0000} ACC: {accuracy:0.00}   LOSS: {loss.Average():0.00000000}");
+                    Console.WriteLine($"{qLearner.Samples:0000} LOSS: {loss.Mean:0.000000000} QV:{qvalues.Min:0.000}...{qvalues.Max:0.000}");
                 }
             }
         }
@@ -157,7 +225,6 @@ namespace NeuralMotion.Test
         {
             lock (net)
             {
-
                 var validation = BuilderInstance.Volume.SameAs(Shape.From(1, 1, 2, 1000));
                 validation.Storage.MapInplace(v => rnd.NextDouble());
                 var expectedValidation = GetClasses(validation);
@@ -192,6 +259,7 @@ namespace NeuralMotion.Test
                 var x = inputs.Get(0, 0, 0, n);
                 var y = inputs.Get(0, 0, 1, n);
 
+                output[n] = 0;
                 if (x < 0.2 || x > 0.8)
                     output[n] = 1;
                 if (y < 0.2 || y > 0.8)
