@@ -5,14 +5,11 @@ using ConvNetSharp.Volume.Double;
 using ConvNetSharp.Core;
 using ConvNetSharp.Volume;
 using System.Linq;
-using NeuralMotion.Evolution.GeneticSharp;
-using System.Collections.Generic;
 using System.Threading;
 using System.Windows.Forms;
 using System.Threading.Tasks;
-using NeuralMotion.Evolution.Annealing;
-using NeuralMotion.Evolution.Custom;
 using ConvNetSharp.Core.Training;
+using NeuralMotion.Evolution;
 
 namespace NeuralMotion.Test
 {
@@ -20,6 +17,24 @@ namespace NeuralMotion.Test
     {
         public static void Main(string[] args)
         {
+            //var net = new Net<double>();
+            //net.AddLayer(new InputLayer(1, 1, 2));
+            //net.AddLayer(new FullyConnLayer(3));
+            //net.AddLayer(new LeakyReluLayer());
+            //net.AddLayer(new FullyConnLayer(3));
+            //net.AddLayer(new LeakyReluLayer());
+            //net.AddLayer(new FullyConnLayer(2));
+            //net.AddLayer(new ReinforcementLayer());
+
+            //var net = new Net<double>();
+            //net.AddLayer(new InputLayer(1, 1, 2));
+            //net.AddLayer(new FullyConnLayer(20));
+            //net.AddLayer(new LeakyReluLayer());
+            //net.AddLayer(new FullyConnLayer(10));
+            //net.AddLayer(new LeakyReluLayer());
+            //net.AddLayer(new FullyConnLayer(2));
+            //net.AddLayer(new RegressionLayer());
+
             var net = new Net<double>();
             net.AddLayer(new InputLayer(1, 1, 2));
             net.AddLayer(new FullyConnLayer(20));
@@ -27,9 +42,8 @@ namespace NeuralMotion.Test
             net.AddLayer(new FullyConnLayer(10));
             net.AddLayer(new LeakyReluLayer());
             net.AddLayer(new FullyConnLayer(2));
-            net.AddLayer(new ReinforcementSoftmaxLayer(2));
-            //net.AddLayer(new RegressionLayer());
-            
+            net.AddLayer(new SoftmaxLayer());
+
             var task = Task.Run(() =>
             {
                 Application.EnableVisualStyles();
@@ -43,9 +57,9 @@ namespace NeuralMotion.Test
 
             ShowAccuracy(rnd, net);
 
-            RunPolicyGradients(net, task, rnd);
+            //RunPolicyGradients(net, task, rnd);
             //RunQLearning(net, task, rnd);
-            //RunGenetic(net, task, rnd);
+            RunStochastic(net, task, rnd);
 
             task.Wait();
         }
@@ -55,7 +69,7 @@ namespace NeuralMotion.Test
             var loss = new MovingStatistics(1000);
             var pgTrainer = new ReinforcementTrainer(net, rnd)
             {
-                BatchSize = 10,
+                BatchSize = 1000,
                 Momentum = 0,
                 L2Decay = 0,
                 L1Decay = 0,
@@ -93,19 +107,28 @@ namespace NeuralMotion.Test
                 }
 
                 var rewards = new double[pgTrainer.BatchSize];
+                var averages = new double[pgTrainer.BatchSize / 20];
                 lock (net)
                 {
                     inputs.MapInplace(v => rnd.NextDouble());
 
                     var expected = GetClasses(inputs);
                     var predicted = pgTrainer.Act(inputs);
+                    for (var i = 0; i < rewards.Length; i++)
+                    {
+                        if (expected[i] != predicted[i])
+                            averages[i / 20] += -1.0;
+                        else
+                            averages[i / 20] += 1.0;
+                    }
 
-                    var reward = expected
-                        .Zip(predicted, (e, p) => e == p ? 1 : -1)
-                        .Sum() / rewards.Length;
+                    var mean = averages.Average();
+                    averages = averages.Select(a => a - mean).ToArray();
+                    var stdev = averages.Select(a => a * a).Average();
+                    averages = averages.Select(a => a / stdev).ToArray();
 
-                    for (var r = 0; r < rewards.Length; r++)
-                        rewards[r] = reward;
+                    for (var i = 0; i < rewards.Length; i++)
+                        rewards[i] = averages[i / 20];
 
                     pgTrainer.Reinforce(inputs, predicted, rewards);
 
@@ -187,37 +210,78 @@ namespace NeuralMotion.Test
             }
         }
 
-        public static void RunGenetic(Net<double> net, Task task, Random rnd)
+        public static void RunStochastic(Net<double> net, Task task, Random rnd)
         {
-            var inputs = BuilderInstance<double>.Volume.SameAs(Shape.From(1, 1, 2, 1000));
-            inputs.MapInplace(v => rnd.NextDouble());
-            var expectedClasses = GetClasses(inputs);
+            var trainer = new CrossEntropyMethod(net)
+            {
+                Alpha = 0.01,
+                InitialMean = 0,
+                InitialStdDev = 2,
+                SamplesCreatedOnEachIteration = 100,
+                SamplesLeftAfterEvaluation = 50
+            };
 
-            var outputs = expectedClasses.ToSoftmaxVolume();
-            var fitness = new SoftmaxLossFitness(net, inputs, outputs);
-            var evolver = new ShrinkingRadiusSearch(100, (ArrayChromosome)fitness.ProtoChromosome, fitness, 10);
-            //var evolver = new Evolver(fitness.ProtoChromosome, 100, fitness, mutation: new NumberMutation());
-            //var evolver = new SimulatedAnnealing((ArrayChromosome)fitness.ProtoChromosome, fitness,
-            //    step: 1,
-            //    alpha: 0.9999);
-
+            int epoch = 0;
+            int batchSize = 10;
             while (task.Status == TaskStatus.Running)
             {
+                if (Console.KeyAvailable)
+                {
+                    var key = Console.ReadKey(true);
+                    if (key.Key == ConsoleKey.Enter)
+                        break;
+
+                    if (key.Key == ConsoleKey.A)
+                    {
+                        ShowAccuracy(rnd, net);
+                        Thread.Sleep(500);
+                    }
+                    else if (key.Key == ConsoleKey.UpArrow || key.Key == ConsoleKey.DownArrow)
+                    {
+                        if (key.Key == ConsoleKey.UpArrow)
+                            trainer.Alpha *= 1.5;
+                        if (key.Key == ConsoleKey.DownArrow)
+                            trainer.Alpha /= 1.5;
+
+                        if (trainer.Alpha > 1.0)
+                            trainer.Alpha = 1.0;
+
+                        Console.WriteLine($"LR: {trainer.Alpha:0.000000}");
+                        Thread.Sleep(100);
+                    }
+                    else if (key.Key == ConsoleKey.LeftArrow || key.Key == ConsoleKey.RightArrow)
+                    {
+                        if (key.Key == ConsoleKey.RightArrow)
+                            batchSize *= 2;
+                        if (key.Key == ConsoleKey.LeftArrow)
+                            batchSize /= 2;
+
+                        if (batchSize < 1)
+                            batchSize = 1;
+
+                        Console.WriteLine($"BS: {batchSize}");
+                        Thread.Sleep(100);
+                    }
+                }
+
+                var parameters = net.GetParametersAndGradients();
+
                 lock (net)
                 {
-                    if (evolver.CurrentChampGenome != null)
-                        net.FromChromosome(evolver.CurrentChampGenome);
+                    trainer.Train(sample =>
+                    {
+                        for (var i = 0; i < sample.Length; i++)
+                            sample[i].DoMultiply(parameters[i].Volume, 1.0);
+                        return GetLoss(rnd, net, batchSize);
+                    });
 
-                    evolver.PerformSingleStep();
+                    for (var i = 0; i < trainer.BestSample.Parameters.Length; i++)
+                        trainer.BestSample.Parameters[i].DoMultiply(parameters[i].Volume, 1.0);
 
-                    net.FromChromosome(evolver.CurrentChampGenome);
-
-                    var accuracy = GetAccuracy(rnd, net);
-
-                    Console.WriteLine($"{evolver.CurrentGeneration * evolver.Size:0000}  LOSS: {evolver.BestFitness:0.00} ACC:{accuracy:0.00}%");
-                    foreach (var line in evolver.StatusReport())
-                        Console.WriteLine(line);
+                    Console.WriteLine($"{epoch:0000} RETURNS: {trainer.BestSample?.Returns:0.0000}");
                 }
+
+                epoch++;
             }
         }
 
@@ -240,6 +304,27 @@ namespace NeuralMotion.Test
                 accuracy *= 100.0;
 
                 return accuracy;
+            }
+        }
+
+        private static double GetLoss(Random rnd, Net<double> net, int batchSize)
+        {
+            lock (net)
+            {
+                var validation = BuilderInstance.Volume.SameAs(Shape.From(1, 1, 2, batchSize));
+                validation.Storage.MapInplace(v => rnd.NextDouble());
+                var expectedValidation = GetClasses(validation);
+
+                var output = net.Forward(validation);
+
+                var batchLoss = 0.0;
+                for (var n = 0; n < batchSize; n++)
+                {
+                    var loss = output.Get(0, 0, expectedValidation[n], n);
+                    batchLoss += Math.Log(loss) / batchSize;
+                }
+
+                return batchLoss;
             }
         }
 

@@ -40,7 +40,15 @@ namespace NeuralMotion.Test
                 for (var y = 0; y < resolution; y += 1)
                     for (var x = 0; x < resolution; x += 1)
                     {
-                        hms.Data[x, y] = output.Get(0, 0, 0, count);
+                        var isa = output.Get(0, 0, 0, count);
+                        var isb = output.Get(0, 0, 1, count);
+
+                        hms.Data[x, y] = isa - isb;
+
+                        //var sum = isa + isb;
+                        //sum = isa / sum;
+                        //hms.Data[x, y] = isb;
+                        
                         count++;
                     }
             }

@@ -46,7 +46,7 @@ namespace NeuralMotion.Intelligence
             net.AddLayer(new FullyConnLayer(inputs));
             net.AddLayer(new LeakyReluLayer());
             net.AddLayer(new FullyConnLayer(outputs));
-            net.AddLayer(new SoftmaxLayer(outputs));
+            net.AddLayer(new SoftmaxLayer());
 
             this.map = new List<VolumePointer>();
             var volumes = this.net.GetParametersAndGradients();

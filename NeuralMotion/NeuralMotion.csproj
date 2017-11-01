@@ -103,6 +103,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="DQNController.cs" />
+    <Compile Include="Evolution\CrossEntropyMethod.cs" />
     <Compile Include="Intelligence\AForgeBrain.cs" />
     <Compile Include="Intelligence\ConvNetBrain.cs" />
     <Compile Include="Intelligence\IController.cs" />
