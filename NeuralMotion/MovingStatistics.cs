@@ -1,4 +1,5 @@
 ﻿using Accord.Statistics.Moving;
+using System.Linq;
 
 namespace NeuralMotion
 {

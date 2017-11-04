@@ -10,9 +10,6 @@ using System.Windows.Forms;
 using System.Threading.Tasks;
 using ConvNetSharp.Core.Training;
 using NeuralMotion.Evolution;
-
-using V = ConvNetSharp.Volume.Volume<double>;
-using System.Diagnostics;
 using ConvNetSharp.Core.Layers;
 
 namespace NeuralMotion.Test
@@ -76,13 +73,16 @@ namespace NeuralMotion.Test
             //RunStochastic(rnd);
         }
 
-        private static Task PlotOutput(Net<double> net)
+        private static Task PlotOutput(Net<double> net, bool showClasses = false)
         {
             var task = Task.Run(() =>
             {
                 Application.EnableVisualStyles();
                 Application.SetCompatibleTextRenderingDefault(false);
-                Application.Run(new Main(net));
+                Application.Run(new Main(net)
+                {
+                    ShowClasses = showClasses
+                });
 
                 Console.WriteLine("Display thread stopped!");
             });
@@ -110,15 +110,17 @@ namespace NeuralMotion.Test
 
             var task = PlotOutput(net);
 
-            var loss = new MovingStatistics(1000);
+            var rewards = new MovingStatistics(100);
+            var means = new MovingStatistics(100);
             var pgTrainer = new ReinforcementTrainer(net, rnd)
             {
                 BatchSize = 1000,
                 Momentum = 0,
                 L2Decay = 0,
                 L1Decay = 0,
-                LearningRate = 1
+                LearningRate = 0.1
             };
+            const int rolloutSteps = 10;
 
             var inputs = BuilderInstance<double>.Volume.SameAs(Shape.From(1, 1, 2, pgTrainer.BatchSize));
             int epoch = 0;
@@ -150,17 +152,15 @@ namespace NeuralMotion.Test
                     }
                 }
 
-                const int rolloutSteps = 1;
+                inputs.MapInplace(v => rnd.NextDouble());
+                var expected = GetClassesForCenter(inputs);
+                //var expected = GetClassesForBorders(inputs);
+                //var expected = Enumerable.Repeat(0, inputs.BatchSize).ToArray();
+
                 var pathRewards = new double[pgTrainer.BatchSize / rolloutSteps];
                 var pathActions = new int[pgTrainer.BatchSize / rolloutSteps][];
                 lock (net)
                 {
-                    inputs.MapInplace(v => rnd.NextDouble());
-
-                    var expected = GetClassesForCenter(inputs);
-                    //var expected = GetClassesForBorders(inputs);
-                    //var expected = Enumerable.Repeat(1, inputs.BatchSize).ToArray();
-
                     var predicted = pgTrainer.Act(inputs);
                     for (var i = 0; i < inputs.BatchSize; i++)
                     {
@@ -171,19 +171,21 @@ namespace NeuralMotion.Test
                         pathActions[xPath][xAction] = predicted[i];
 
                         if (expected[i] != predicted[i])
-                            pathRewards[xPath] += -1.0;
+                            pathRewards[xPath] += -1.0 / rolloutSteps;
                         else
-                            pathRewards[xPath] += 1.0;
+                            pathRewards[xPath] += 1.0 / rolloutSteps;
                     }
 
-                    pgTrainer.Reinforce(pathActions, pathRewards);
+                    pgTrainer.Reinforce(inputs, pathActions, pathRewards);
 
                     epoch++;
                 }
 
-                loss.Push(pgTrainer.Loss);
+                rewards.Push(pgTrainer.EstimatedRewards);
+                means.Push(rewards.Mean);
+                var speed = (means.Max - means.Min) / means.Count;
 
-                Console.WriteLine($"{epoch:0000} LOSS: {loss.Mean:0.000000000}");
+                Console.WriteLine($"{epoch:0000} REWARD: {rewards.Mean:0.000000000} SPEED:{speed:0.0000000} rew/epoch");
             }
         }
 
@@ -214,7 +216,7 @@ namespace NeuralMotion.Test
                 ReplayMemoryDiscardStrategy = ExperienceDiscardStrategy.First,
                 ReplaysPerIteration = 100,
                 Gamma = 0,
-                ClampErrorTo = double.MaxValue                
+                ClampErrorTo = double.MaxValue
             };
 
             while (task.Status == TaskStatus.Running)
@@ -453,11 +455,12 @@ namespace NeuralMotion.Test
             var output = new int[inputs.BatchSize];
             for (var n = 0; n < inputs.BatchSize; n++)
             {
+                const double radius = 0.3;
                 var x = inputs.Get(0, 0, 0, n);
                 var y = inputs.Get(0, 0, 1, n);
                 x = x - 0.5;
                 y = y - 0.5;
-                if (x * x + y * y < 0.2)
+                if (x * x + y * y < radius * radius)
                     output[n] = 1;
                 else
                     output[n] = 0;

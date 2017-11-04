@@ -12,6 +12,8 @@ namespace NeuralMotion.Test
 {
     public partial class Main : Form
     {
+        public bool ShowClasses { get; set; }
+
         private Net<double> net;
         private Volume<double> input;
         private PlotModel plotModel;
@@ -46,10 +48,17 @@ namespace NeuralMotion.Test
                     {
                         var isa = output.Get(0, 0, 0, count);
                         var isb = output.Get(0, 0, 1, count);
-                        if (isReg)
-                            hms.Data[x, y] = isa - isb;
+                        if (ShowClasses)
+                        {
+                            hms.Data[x, y] = isa > isb ? -1 : 1;
+                        }
                         else
-                            hms.Data[x, y] = isa;
+                        {
+                            if (isReg)
+                                hms.Data[x, y] = isa - isb;
+                            else
+                                hms.Data[x, y] = isa;
+                        }
 
                         //var sum = isa + isb;
                         //sum = isa / sum;
@@ -62,18 +71,17 @@ namespace NeuralMotion.Test
             plotView.InvalidatePlot(true);
         }
 
-        public Main(Net<double> net)
+        protected override void OnShown(EventArgs e)
         {
-            InitializeComponent();
+            base.OnShown(e);
 
-            this.net = net;
             this.plotModel = new PlotModel()
             {
                 Axes =
                 {
                     new LinearColorAxis
                     {
-                         Palette = OxyPalettes.Jet(100)
+                         Palette = ShowClasses ? OxyPalettes.Cool(2) : OxyPalettes.Jet(100)
                     }
                 },
                 PlotType = PlotType.XY,
@@ -88,7 +96,7 @@ namespace NeuralMotion.Test
                         Y0 = 0,
                         Y1 = 1,
                         Data = new double[,]{ },
-                        Interpolate = false
+                        Interpolate = false,
                     }
                 }
             };
@@ -97,8 +105,15 @@ namespace NeuralMotion.Test
             this.plotView.Controller = null;
 
             this.refreshTimer.Interval = 100;
-            this.refreshTimer.Tick += this.RefreshSeries;
             this.refreshTimer.Enabled = true;
+        }
+
+        public Main(Net<double> net)
+        {
+            InitializeComponent();
+
+            this.net = net;
+            this.refreshTimer.Tick += this.RefreshSeries;
         }
     }
 }
