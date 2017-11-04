@@ -4,13 +4,14 @@ using OxyPlot;
 using OxyPlot.Axes;
 using OxyPlot.Series;
 using System;
+using System.Linq;
 using System.Windows.Forms;
 
 namespace NeuralMotion.Test
 {
     public partial class Main : Form
     {
-        private INet<double> net;
+        private Net<double> net;
         private Volume<double> input;
         private PlotModel plotModel;
 
@@ -43,7 +44,7 @@ namespace NeuralMotion.Test
                         var isa = output.Get(0, 0, 0, count);
                         var isb = output.Get(0, 0, 1, count);
 
-                        hms.Data[x, y] = isa - isb;
+                        hms.Data[x, y] = isa;
 
                         //var sum = isa + isb;
                         //sum = isa / sum;
@@ -56,7 +57,7 @@ namespace NeuralMotion.Test
             plotView.InvalidatePlot(true);
         }
 
-        public Main(INet<double> net)
+        public Main(Net<double> net)
         {
             InitializeComponent();
 

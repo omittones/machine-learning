@@ -21,6 +21,7 @@ namespace NeuralMotion.Evolution
         public double InitialMean { get; set; }
         public double InitialStdDev { get; set; }
         public Sample BestSample { get; private set; }
+        public double AvgStdDevs => stdDevs.Average();
 
         public CrossEntropyMethod(Net<double> net)
         {
@@ -68,7 +69,9 @@ namespace NeuralMotion.Evolution
             for (var sample = 0; sample < SamplesCreatedOnEachIteration; sample++)
             {
                 count = 0;
-                foreach (var volume in volumes)
+                var cloned = Clone(volumes);
+
+                foreach (var volume in cloned)
                 {
                     var flat = volume.ReShape(1, 1, 1, -1);
                     for (var i = 0; i < flat.Shape.TotalLength; i++)
@@ -78,16 +81,16 @@ namespace NeuralMotion.Evolution
                     }
                 }
 
-                var cloned = Clone(volumes);
                 samples.Add(new Sample
                 {
                     Parameters = cloned,
-                    Returns = double.MinValue
+                    Returns = null
                 });
             }
 
             for (var sample = 0; sample < samples.Count; sample++)
-                samples[sample].Returns = returnsFunction(samples[sample].Parameters);
+                if (samples[sample].Returns == null)
+                    samples[sample].Returns = returnsFunction(samples[sample].Parameters);
             
             samples = samples
                 .OrderByDescending(s => s.Returns)
@@ -126,11 +129,24 @@ namespace NeuralMotion.Evolution
         {
             return (int)volumes.Select(v => v.Shape.TotalLength).Sum();
         }
+
+        public void ClearCache()
+        {
+            samples.ForEach(s => s.Returns = null);
+        }
     }
 
     public class Sample
     {
-        public double Returns;
+        public double? Returns;
         public Volume<double>[] Parameters;
+
+        public override string ToString()
+        {
+            if (Returns.HasValue)
+                return "returns: " + Returns.Value.ToString("0.000");
+            else
+                return "returns: pending";
+        }
     }
 }

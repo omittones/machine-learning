@@ -11,17 +11,156 @@ using System.Threading.Tasks;
 using ConvNetSharp.Core.Training;
 using NeuralMotion.Evolution;
 
+using V = ConvNetSharp.Volume.Volume<double>;
+
 namespace NeuralMotion.Test
 {
     public static partial class Program
     {
+        public static VolumeBuilder<double> B = BuilderInstance<double>.Volume;
+
+        public static V MuPolicy(V input)
+        {
+            var maxes = B.SameAs(1, 1, 1, input.BatchSize);
+            var output = B.SameAs(1, 1, input.Depth, input.BatchSize);
+            input.DoMax(maxes);
+            for (var bs = 0; bs < input.BatchSize; bs++)
+            {
+                double expSum = 0;
+                for (var d = 0; d < input.Depth; d++)
+                {
+                    var exp = Math.Exp(input.Get(0, 0, d, bs) - maxes.Get(0, 0, 0, bs));
+                    expSum += exp;
+                    output.Set(0, 0, d, bs, exp);
+                }
+
+                for (var d = 0; d < input.Depth; d++)
+                {
+                    var exp = output.Get(0, 0, d, bs);
+                    output.Set(0, 0, d, bs, exp / expSum);
+                }
+            }
+
+            return output;
+        }
+
+        public static V LogMuPolicy(V input)
+        {
+            var output = B.SameAs(1, 1, input.Depth, input.BatchSize);
+
+            var maxes = B.SameAs(1, 1, 1, input.BatchSize);
+            input.DoMax(maxes);
+            for (var bs = 0; bs < input.BatchSize; bs++)
+            {
+                var max = maxes.Get(0, 0, 0, bs);
+
+                double expSum = 0;
+                for (var d = 0; d < input.Depth; d++)
+                    expSum += Math.Exp(input.Get(0, 0, d, bs) - max);
+                var logSumExp = max + Math.Log(expSum);
+
+                for (var d = 0; d < input.Depth; d++)
+                {
+                    var value = input.Get(0, 0, d, bs);
+                    output.Set(0, 0, d, bs, value - logSumExp);
+                }
+            }
+
+            return output;
+        }
+
+        public static V AltLogMuPolicy(V input)
+        {
+            var output = MuPolicy(input);
+
+            for (var bs = 0; bs < input.BatchSize; bs++)
+            {
+                for (var d = 0; d < input.Depth; d++)
+                {
+                    var value = input.Get(0, 0, d, bs);
+                    output.Set(0, 0, d, bs, Math.Log(value));
+                }
+            }
+
+            return output;
+        }
+
+        public static V GradientLogMuPolicy(V input, V mu, int batch, int action)
+        {
+            var output = B.SameAs(1, 1, input.Depth, input.BatchSize);
+            output.Set(0, 0, action, batch, 1);
+            for (var d = 0; d < input.Depth; d++)
+                output.Set(0, 0, d, batch, output.Get(0, 0, d, batch) - mu.Get(0, 0, d, batch));
+            return output;
+        }
+
+        public static V PathLikelihoodRatio(V input, V mu, int[] states, int[] actions)
+        {
+            var output = B.SameAs(input.Shape);
+            for (var i = 0; i < states.Length; i++)
+            {
+                var grad = GradientLogMuPolicy(input, mu, states[i], actions[i]);
+                output.DoAdd(grad, output);
+            }
+            return output;
+        }
+
+        public static V PolicyGradient(V input, V mu, int[][] states, int[][] actions, double[] rewards)
+        {
+            var grad = B.SameAs(input.Shape);
+            for (var i = 0; i < states.Length; i++)
+            {
+                var likelihood = PathLikelihoodRatio(input, mu, states[i], actions[i]);
+                likelihood.DoMultiply(likelihood, rewards[i]);
+                grad.DoAdd(likelihood, grad);
+            }
+
+            grad.DoMultiply(grad, 1.0 / states.Length);
+
+            return grad;
+        }
+
         public static void Main(string[] args)
         {
+            //var input = B.SameAs(new double[] { 1, 2, 3, 1, 1, 0, 0, 1, 0 }, Shape.From(1, 1, 3, 3));
+            //var mu = MuPolicy(input);
+            //Console.WriteLine("Mu:");
+            //Console.WriteLine(mu.ToString("0.00"));
+
+            //var log_mu = LogMuPolicy(mu);
+            //Console.WriteLine("Log Mu:");
+            //Console.WriteLine(log_mu.ToString("0.00"));
+
+            ////var alt_log_mu = AltLogMuPolicy(mu);
+            ////Console.WriteLine(alt_log_mu.ToString("0.00"));
+            ////return;
+
+            //var grad_log_mu = GradientLogMuPolicy(input, mu, 1, 1);
+            //Console.WriteLine("Grad Log Mu (1, 1):");
+            //Console.WriteLine(grad_log_mu.ToString());
+
+            //input = B.SameAs(new double[] { 0, 0, 0, 0, 0, 0, 0, 0, 0 }, Shape.From(1, 1, 3, 3));
+            //mu = MuPolicy(input);
+            //var grad = PolicyGradient(input, mu, new int[][]{
+            //    new[] { 0, 0, 0, 0, 0 },
+            //    new[] { 1, 1, 1, 1, 1 },
+            //    new[] { 2, 2, 2, 2, 2 }                
+            //}, new int[][]{
+            //    new[] { 0, 1, 1, 1, 1 },
+            //    new[] { 2, 2, 2, 2, 2 },
+            //    new[] { 0, 0, 0, 0, 0 },
+            //}, new double[] { 0.9, 1.0, 0.0 });
+
+            //Console.WriteLine("Policy Grad:");
+            //Console.WriteLine(grad.ToString());
+
+            //return;
+
             //var net = new Net<double>();
             //net.AddLayer(new InputLayer(1, 1, 2));
-            //net.AddLayer(new FullyConnLayer(3));
+            //net.AddLayer(new FullyConnLayer(20));
             //net.AddLayer(new LeakyReluLayer());
-            //net.AddLayer(new FullyConnLayer(3));
+            //net.AddLayer(new FullyConnLayer(10));
             //net.AddLayer(new LeakyReluLayer());
             //net.AddLayer(new FullyConnLayer(2));
             //net.AddLayer(new ReinforcementLayer());
@@ -35,15 +174,15 @@ namespace NeuralMotion.Test
             //net.AddLayer(new FullyConnLayer(2));
             //net.AddLayer(new RegressionLayer());
 
-            var net = new Net<double>();
-            net.AddLayer(new InputLayer(1, 1, 2));
-            net.AddLayer(new FullyConnLayer(20));
-            net.AddLayer(new LeakyReluLayer());
-            net.AddLayer(new FullyConnLayer(10));
-            net.AddLayer(new LeakyReluLayer());
-            net.AddLayer(new FullyConnLayer(2));
-            net.AddLayer(new SoftmaxLayer());
+            var rnd = new Random(DateTime.Now.Millisecond);
 
+            //RunPolicyGradients(rnd);
+            //RunQLearning(rnd);
+            RunStochastic(rnd);
+        }
+
+        private static Task PlotOutput(Net<double> net)
+        {
             var task = Task.Run(() =>
             {
                 Application.EnableVisualStyles();
@@ -53,19 +192,29 @@ namespace NeuralMotion.Test
                 Console.WriteLine("Display thread stopped!");
             });
 
-            var rnd = new Random(DateTime.Now.Millisecond);
+            while (task.Status == TaskStatus.WaitingForActivation ||
+                task.Status == TaskStatus.WaitingToRun ||
+                task.Status == TaskStatus.Created)
+                Thread.Sleep(0);
+
+            return task;
+        }
+
+        private static void RunPolicyGradients(Random rnd)
+        {
+            var net = new Net<double>();
+            net.AddLayer(new InputLayer(1, 1, 2));
+            net.AddLayer(new FullyConnLayer(20));
+            net.AddLayer(new LeakyReluLayer());
+            net.AddLayer(new FullyConnLayer(10));
+            net.AddLayer(new LeakyReluLayer());
+            net.AddLayer(new FullyConnLayer(2));
+            net.AddLayer(new ReinforcementLayer());
 
             ShowAccuracy(rnd, net);
 
-            //RunPolicyGradients(net, task, rnd);
-            //RunQLearning(net, task, rnd);
-            RunStochastic(net, task, rnd);
+            var task = PlotOutput(net);
 
-            task.Wait();
-        }
-
-        private static void RunPolicyGradients(Net<double> net, Task task, Random rnd)
-        {
             var loss = new MovingStatistics(1000);
             var pgTrainer = new ReinforcementTrainer(net, rnd)
             {
@@ -106,31 +255,30 @@ namespace NeuralMotion.Test
                     }
                 }
 
+                const int rolloutSteps = 20;
                 var rewards = new double[pgTrainer.BatchSize];
-                var averages = new double[pgTrainer.BatchSize / 20];
+                var rolloutReward = new double[pgTrainer.BatchSize / rolloutSteps];
                 lock (net)
                 {
                     inputs.MapInplace(v => rnd.NextDouble());
 
-                    var expected = GetClasses(inputs);
+                    var expected = GetClassesForCenter(inputs);
+                    //var expected = GetClassesForBorders(inputs);
+                    //var expected = Enumerable.Repeat(1, inputs.BatchSize).ToArray();
+
                     var predicted = pgTrainer.Act(inputs);
                     for (var i = 0; i < rewards.Length; i++)
                     {
                         if (expected[i] != predicted[i])
-                            averages[i / 20] += -1.0;
+                            rolloutReward[i / rolloutSteps] += -1.0;
                         else
-                            averages[i / 20] += 1.0;
+                            rolloutReward[i / rolloutSteps] += 1.0;
                     }
 
-                    var mean = averages.Average();
-                    averages = averages.Select(a => a - mean).ToArray();
-                    var stdev = averages.Select(a => a * a).Average();
-                    averages = averages.Select(a => a / stdev).ToArray();
-
                     for (var i = 0; i < rewards.Length; i++)
-                        rewards[i] = averages[i / 20];
+                        rewards[i] = rolloutReward[i / rolloutSteps];
 
-                    pgTrainer.Reinforce(inputs, predicted, rewards);
+                    pgTrainer.Reinforce(predicted, rewards);
 
                     epoch++;
                 }
@@ -141,8 +289,21 @@ namespace NeuralMotion.Test
             }
         }
 
-        private static void RunQLearning(Net<double> net, Task task, Random rnd)
+        private static void RunQLearning(Random rnd)
         {
+            var net = new Net<double>();
+            net.AddLayer(new InputLayer(1, 1, 2));
+            net.AddLayer(new FullyConnLayer(20));
+            net.AddLayer(new LeakyReluLayer());
+            net.AddLayer(new FullyConnLayer(10));
+            net.AddLayer(new LeakyReluLayer());
+            net.AddLayer(new FullyConnLayer(2));
+            net.AddLayer(new RegressionLayer());
+
+            ShowAccuracy(rnd, net);
+
+            var task = PlotOutput(net);
+
             var loss = new MovingStatistics(1000);
             var qvalues = new MovingStatistics(1000);
             var inputs = new double[] { 0, 0 };
@@ -191,7 +352,7 @@ namespace NeuralMotion.Test
                     inputs = inputs.Select(v => rnd.NextDouble()).ToArray();
                     for (var i = 0; i < 1; i++)
                     {
-                        var expectedActions = GetClasses(inputs);
+                        var expectedActions = GetClassesForBorders(inputs);
 
                         var predictedAction = qLearner.Act(inputs.ToArray());
 
@@ -210,19 +371,36 @@ namespace NeuralMotion.Test
             }
         }
 
-        public static void RunStochastic(Net<double> net, Task task, Random rnd)
+        public static void RunStochastic(Random rnd)
         {
+            var net = new Net<double>();
+            net.AddLayer(new InputLayer(1, 1, 2));
+            net.AddLayer(new FullyConnLayer(20));
+            net.AddLayer(new LeakyReluLayer());
+            net.AddLayer(new FullyConnLayer(10));
+            net.AddLayer(new LeakyReluLayer());
+            net.AddLayer(new FullyConnLayer(2));
+            net.AddLayer(new SoftmaxLayer());
+
+            ShowAccuracy(rnd, net);
+
+            var task = PlotOutput(net);
+
             var trainer = new CrossEntropyMethod(net)
             {
-                Alpha = 0.01,
+                Alpha = 0.1,
                 InitialMean = 0,
-                InitialStdDev = 2,
+                InitialStdDev = 0.2,
                 SamplesCreatedOnEachIteration = 100,
                 SamplesLeftAfterEvaluation = 50
             };
 
             int epoch = 0;
-            int batchSize = 10;
+            int batchSize = 100;
+
+            Volume<double> validation = null;
+            int[] expectedValidation = null;
+
             while (task.Status == TaskStatus.Running)
             {
                 if (Console.KeyAvailable)
@@ -251,6 +429,8 @@ namespace NeuralMotion.Test
                     }
                     else if (key.Key == ConsoleKey.LeftArrow || key.Key == ConsoleKey.RightArrow)
                     {
+                        trainer.ClearCache();
+
                         if (key.Key == ConsoleKey.RightArrow)
                             batchSize *= 2;
                         if (key.Key == ConsoleKey.LeftArrow)
@@ -268,17 +448,33 @@ namespace NeuralMotion.Test
 
                 lock (net)
                 {
+                    if (expectedValidation == null || expectedValidation.Length != batchSize)
+                    {
+                        validation = BuilderInstance.Volume.SameAs(Shape.From(1, 1, 2, batchSize));
+                        validation.Storage.MapInplace(v => rnd.NextDouble());
+                        expectedValidation = GetClassesForCenter(validation);
+                    }
+
                     trainer.Train(sample =>
                     {
                         for (var i = 0; i < sample.Length; i++)
                             sample[i].DoMultiply(parameters[i].Volume, 1.0);
-                        return GetLoss(rnd, net, batchSize);
+                        var output = net.Forward(validation);
+                        var batchLoss = 0.0;
+                        for (var n = 0; n < batchSize; n++)
+                        {
+                            var loss = output.Get(0, 0, expectedValidation[n], n);
+                            if (loss == 0)
+                                loss = 0.0000000001;
+                            batchLoss += Math.Log(loss) / batchSize;
+                        }
+                        return batchLoss;
                     });
 
                     for (var i = 0; i < trainer.BestSample.Parameters.Length; i++)
                         trainer.BestSample.Parameters[i].DoMultiply(parameters[i].Volume, 1.0);
 
-                    Console.WriteLine($"{epoch:0000} RETURNS: {trainer.BestSample?.Returns:0.0000}");
+                    Console.WriteLine($"{epoch:0000} STDEVS:{trainer.AvgStdDevs:0.000} RETURNS: {trainer.BestSample?.Returns:0.0000}");
                 }
 
                 epoch++;
@@ -291,7 +487,7 @@ namespace NeuralMotion.Test
             {
                 var validation = BuilderInstance.Volume.SameAs(Shape.From(1, 1, 2, 1000));
                 validation.Storage.MapInplace(v => rnd.NextDouble());
-                var expectedValidation = GetClasses(validation);
+                var expectedValidation = GetClassesForBorders(validation);
 
                 var output = net.Forward(validation);
                 var predictedValidation = new int[validation.Shape.GetDimension(3)];
@@ -313,7 +509,7 @@ namespace NeuralMotion.Test
             {
                 var validation = BuilderInstance.Volume.SameAs(Shape.From(1, 1, 2, batchSize));
                 validation.Storage.MapInplace(v => rnd.NextDouble());
-                var expectedValidation = GetClasses(validation);
+                var expectedValidation = GetClassesForBorders(validation);
 
                 var output = net.Forward(validation);
 
@@ -334,8 +530,8 @@ namespace NeuralMotion.Test
 
             Console.WriteLine($"ACCURACY: {accuracy:0.00}%");
         }
-        
-        private static int[] GetClasses(Volume<double> inputs)
+
+        private static int[] GetClassesForBorders(Volume<double> inputs)
         {
             var count = inputs.Shape.GetDimension(3);
             var output = new int[count];
@@ -349,6 +545,24 @@ namespace NeuralMotion.Test
                     output[n] = 1;
                 if (y < 0.2 || y > 0.8)
                     output[n] = 1;
+            }
+
+            return output;
+        }
+
+        private static int[] GetClassesForCenter(Volume<double> inputs)
+        {
+            var output = new int[inputs.BatchSize];
+            for (var n = 0; n < inputs.BatchSize; n++)
+            {
+                var x = inputs.Get(0, 0, 0, n);
+                var y = inputs.Get(0, 0, 1, n);
+                x = x - 0.5;
+                y = y - 0.5;
+                if (x * x + y * y < 0.2)
+                    output[n] = 1;
+                else
+                    output[n] = 0;
             }
 
             return output;
