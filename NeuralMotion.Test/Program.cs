@@ -12,114 +12,13 @@ using ConvNetSharp.Core.Training;
 using NeuralMotion.Evolution;
 
 using V = ConvNetSharp.Volume.Volume<double>;
+using System.Diagnostics;
+using ConvNetSharp.Core.Layers;
 
 namespace NeuralMotion.Test
 {
     public static partial class Program
     {
-        public static VolumeBuilder<double> B = BuilderInstance<double>.Volume;
-
-        public static V MuPolicy(V input)
-        {
-            var maxes = B.SameAs(1, 1, 1, input.BatchSize);
-            var output = B.SameAs(1, 1, input.Depth, input.BatchSize);
-            input.DoMax(maxes);
-            for (var bs = 0; bs < input.BatchSize; bs++)
-            {
-                double expSum = 0;
-                for (var d = 0; d < input.Depth; d++)
-                {
-                    var exp = Math.Exp(input.Get(0, 0, d, bs) - maxes.Get(0, 0, 0, bs));
-                    expSum += exp;
-                    output.Set(0, 0, d, bs, exp);
-                }
-
-                for (var d = 0; d < input.Depth; d++)
-                {
-                    var exp = output.Get(0, 0, d, bs);
-                    output.Set(0, 0, d, bs, exp / expSum);
-                }
-            }
-
-            return output;
-        }
-
-        public static V LogMuPolicy(V input)
-        {
-            var output = B.SameAs(1, 1, input.Depth, input.BatchSize);
-
-            var maxes = B.SameAs(1, 1, 1, input.BatchSize);
-            input.DoMax(maxes);
-            for (var bs = 0; bs < input.BatchSize; bs++)
-            {
-                var max = maxes.Get(0, 0, 0, bs);
-
-                double expSum = 0;
-                for (var d = 0; d < input.Depth; d++)
-                    expSum += Math.Exp(input.Get(0, 0, d, bs) - max);
-                var logSumExp = max + Math.Log(expSum);
-
-                for (var d = 0; d < input.Depth; d++)
-                {
-                    var value = input.Get(0, 0, d, bs);
-                    output.Set(0, 0, d, bs, value - logSumExp);
-                }
-            }
-
-            return output;
-        }
-
-        public static V AltLogMuPolicy(V input)
-        {
-            var output = MuPolicy(input);
-
-            for (var bs = 0; bs < input.BatchSize; bs++)
-            {
-                for (var d = 0; d < input.Depth; d++)
-                {
-                    var value = input.Get(0, 0, d, bs);
-                    output.Set(0, 0, d, bs, Math.Log(value));
-                }
-            }
-
-            return output;
-        }
-
-        public static V GradientLogMuPolicy(V input, V mu, int batch, int action)
-        {
-            var output = B.SameAs(1, 1, input.Depth, input.BatchSize);
-            output.Set(0, 0, action, batch, 1);
-            for (var d = 0; d < input.Depth; d++)
-                output.Set(0, 0, d, batch, output.Get(0, 0, d, batch) - mu.Get(0, 0, d, batch));
-            return output;
-        }
-
-        public static V PathLikelihoodRatio(V input, V mu, int[] states, int[] actions)
-        {
-            var output = B.SameAs(input.Shape);
-            for (var i = 0; i < states.Length; i++)
-            {
-                var grad = GradientLogMuPolicy(input, mu, states[i], actions[i]);
-                output.DoAdd(grad, output);
-            }
-            return output;
-        }
-
-        public static V PolicyGradient(V input, V mu, int[][] states, int[][] actions, double[] rewards)
-        {
-            var grad = B.SameAs(input.Shape);
-            for (var i = 0; i < states.Length; i++)
-            {
-                var likelihood = PathLikelihoodRatio(input, mu, states[i], actions[i]);
-                likelihood.DoMultiply(likelihood, rewards[i]);
-                grad.DoAdd(likelihood, grad);
-            }
-
-            grad.DoMultiply(grad, 1.0 / states.Length);
-
-            return grad;
-        }
-
         public static void Main(string[] args)
         {
             //var input = B.SameAs(new double[] { 1, 2, 3, 1, 1, 0, 0, 1, 0 }, Shape.From(1, 1, 3, 3));
@@ -141,15 +40,11 @@ namespace NeuralMotion.Test
 
             //input = B.SameAs(new double[] { 0, 0, 0, 0, 0, 0, 0, 0, 0 }, Shape.From(1, 1, 3, 3));
             //mu = MuPolicy(input);
-            //var grad = PolicyGradient(input, mu, new int[][]{
-            //    new[] { 0, 0, 0, 0, 0 },
-            //    new[] { 1, 1, 1, 1, 1 },
-            //    new[] { 2, 2, 2, 2, 2 }                
-            //}, new int[][]{
-            //    new[] { 0, 1, 1, 1, 1 },
-            //    new[] { 2, 2, 2, 2, 2 },
-            //    new[] { 0, 0, 0, 0, 0 },
-            //}, new double[] { 0.9, 1.0, 0.0 });
+            //var grad = PolicyGradient(input, mu,
+            //new int[][] {
+            //    new[] { 0, 0 },
+            //    new[] { 1 }
+            //}, new double[] { 0.1, 1.0 });
 
             //Console.WriteLine("Policy Grad:");
             //Console.WriteLine(grad.ToString());
@@ -176,9 +71,9 @@ namespace NeuralMotion.Test
 
             var rnd = new Random(DateTime.Now.Millisecond);
 
-            //RunPolicyGradients(rnd);
+            RunPolicyGradients(rnd);
             //RunQLearning(rnd);
-            RunStochastic(rnd);
+            //RunStochastic(rnd);
         }
 
         private static Task PlotOutput(Net<double> net)
@@ -222,7 +117,7 @@ namespace NeuralMotion.Test
                 Momentum = 0,
                 L2Decay = 0,
                 L1Decay = 0,
-                LearningRate = 0.1
+                LearningRate = 1
             };
 
             var inputs = BuilderInstance<double>.Volume.SameAs(Shape.From(1, 1, 2, pgTrainer.BatchSize));
@@ -255,9 +150,9 @@ namespace NeuralMotion.Test
                     }
                 }
 
-                const int rolloutSteps = 20;
-                var rewards = new double[pgTrainer.BatchSize];
-                var rolloutReward = new double[pgTrainer.BatchSize / rolloutSteps];
+                const int rolloutSteps = 1;
+                var pathRewards = new double[pgTrainer.BatchSize / rolloutSteps];
+                var pathActions = new int[pgTrainer.BatchSize / rolloutSteps][];
                 lock (net)
                 {
                     inputs.MapInplace(v => rnd.NextDouble());
@@ -267,18 +162,21 @@ namespace NeuralMotion.Test
                     //var expected = Enumerable.Repeat(1, inputs.BatchSize).ToArray();
 
                     var predicted = pgTrainer.Act(inputs);
-                    for (var i = 0; i < rewards.Length; i++)
+                    for (var i = 0; i < inputs.BatchSize; i++)
                     {
+                        var xPath = i / rolloutSteps;
+                        var xAction = i - xPath * rolloutSteps;
+                        if (pathActions[xPath] == null)
+                            pathActions[xPath] = new int[rolloutSteps];
+                        pathActions[xPath][xAction] = predicted[i];
+
                         if (expected[i] != predicted[i])
-                            rolloutReward[i / rolloutSteps] += -1.0;
+                            pathRewards[xPath] += -1.0;
                         else
-                            rolloutReward[i / rolloutSteps] += 1.0;
+                            pathRewards[xPath] += 1.0;
                     }
 
-                    for (var i = 0; i < rewards.Length; i++)
-                        rewards[i] = rolloutReward[i / rolloutSteps];
-
-                    pgTrainer.Reinforce(predicted, rewards);
+                    pgTrainer.Reinforce(pathActions, pathRewards);
 
                     epoch++;
                 }
@@ -352,7 +250,7 @@ namespace NeuralMotion.Test
                     inputs = inputs.Select(v => rnd.NextDouble()).ToArray();
                     for (var i = 0; i < 1; i++)
                     {
-                        var expectedActions = GetClassesForBorders(inputs);
+                        var expectedActions = GetClassesForCenter(inputs);
 
                         var predictedAction = qLearner.Act(inputs.ToArray());
 

@@ -1,4 +1,5 @@
 ﻿using ConvNetSharp.Core;
+using ConvNetSharp.Core.Layers;
 using ConvNetSharp.Volume;
 using OxyPlot;
 using OxyPlot.Axes;
@@ -36,6 +37,8 @@ namespace NeuralMotion.Test
 
             lock (net)
             {
+                var isReg = net.Layers.Last() is RegressionLayer<double>;
+
                 count = 0;
                 var output = net.Forward(input);
                 for (var y = 0; y < resolution; y += 1)
@@ -43,13 +46,15 @@ namespace NeuralMotion.Test
                     {
                         var isa = output.Get(0, 0, 0, count);
                         var isb = output.Get(0, 0, 1, count);
-
-                        hms.Data[x, y] = isa;
+                        if (isReg)
+                            hms.Data[x, y] = isa - isb;
+                        else
+                            hms.Data[x, y] = isa;
 
                         //var sum = isa + isb;
                         //sum = isa / sum;
                         //hms.Data[x, y] = isb;
-                        
+
                         count++;
                     }
             }
