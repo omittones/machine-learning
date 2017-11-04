@@ -118,7 +118,8 @@ namespace NeuralMotion.Test
                 Momentum = 0,
                 L2Decay = 0,
                 L1Decay = 0,
-                LearningRate = 0.1
+                LearningRate = 0.1,
+                RewardDiscountGamma = 0
             };
             const int rolloutSteps = 10;
 
