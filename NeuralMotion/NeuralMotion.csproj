@@ -108,6 +108,11 @@
     <Compile Include="Intelligence\ConvNetBrain.cs" />
     <Compile Include="Intelligence\IController.cs" />
     <Compile Include="MovingStatistics.cs" />
+    <Compile Include="Path.cs" />
+    <Compile Include="PolicyGradientsController.cs" />
+    <Compile Include="RolloutCollection.cs" />
+    <Compile Include="Simulator\IIndicator.cs" />
+    <Compile Include="Simulator\Line.cs" />
     <Compile Include="Views\BallDisplay.cs">
       <SubType>UserControl</SubType>
     </Compile>

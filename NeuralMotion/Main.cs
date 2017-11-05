@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 using NeuralMotion.Simulator;
 using Util;
+using NeuralMotion.Intelligence;
 
 namespace NeuralMotion
 {
@@ -15,14 +16,15 @@ namespace NeuralMotion
         private Task simulation;
 
         public BoxArena BoxArena { get; private set; }
-        public DQNController Controller { get; private set; }
+        public IController Controller { get; private set; }
 
         public Main()
         {
-            this.Controller = new DQNController();
-            this.BoxArena = new BoxArena(Controller, 10, 0.06f)
+            this.Controller = new PolicyGradientsController(500, 5);
+            this.BoxArena = new BoxArena(SetupEnvironment, Controller, 10, 0.06f)
             {
-                LimitSimulationDuration = null,
+                LimitSimulationDuration = 1000,
+                RestartOnEnd = true,
                 RealTime = false
             };
 
@@ -60,44 +62,54 @@ namespace NeuralMotion
 
             Console.WriteLine("Loaded...");
 
-            this.simulation = this.BoxArena.RunAsync((index, ball) =>
-            {
-                Console.WriteLine($"Created ball {ball.Id}...");
-
-                ball.Speed = new System.Drawing.PointF
-                {
-                    X = (float)rnd.NextDouble() * 2 - 1.0f,
-                    Y = (float)rnd.NextDouble() * 2 - 1.0f
-                };
-                ball.Speed = ball.Speed.Scale(0.5f);
-
-                ball.Position = new System.Drawing.PointF
-                {
-                    X = (float)rnd.NextDouble() * 2 - 1.0f,
-                    Y = (float)rnd.NextDouble() * 2 - 1.0f
-                };
-            });
-
+            this.simulation = this.BoxArena.Run();
             this.refreshTimer.Enabled = true;
             this.infoTimer.Enabled = true;
         }
 
+        private void SetupEnvironment(int index, Ball ball)
+        {
+            ball.Speed = new System.Drawing.PointF
+            {
+                X = (float)rnd.NextDouble() * 2 - 1.0f,
+                Y = (float)rnd.NextDouble() * 2 - 1.0f
+            };
+            ball.Speed = ball.Speed.Scale(0.5f);
+            ball.Position = new System.Drawing.PointF
+            {
+                X = (float)rnd.NextDouble() * 2 - 1.0f,
+                Y = (float)rnd.NextDouble() * 2 - 1.0f
+            };
+        }
+
         private void ShowInfo(object sender, EventArgs args)
         {
-            var trainer = Controller.Trainer;
-
             if (this.simulation.Status == TaskStatus.Running)
             {
-                var rewardRange = $"{Controller.Rewards.Min:0.000} ... {Controller.Rewards.Mean:0.000} ... {Controller.Rewards.Max:0.000}";
-                Console.WriteLine($"{trainer.Samples:0000}   LOSS: {Controller.Loss.Mean:0.00000000}   REWARDS: {rewardRange}");
-                if (uiSettings.ShowBallStatus)
+                var pg = Controller as PolicyGradientsController;
+                if (pg != null)
                 {
-                    Console.WriteLine($"   - Replay count: {trainer.ReplayMemoryCount}");
-                    Console.WriteLine($"   - QValue mean: {Controller.QValues.Mean:0.000} / {Controller.QValues.StandardDeviation:0.000}");
-                    Console.WriteLine($"   - QValue range: {Controller.QValues.Min:0.000} ... {Controller.QValues.Max:0.000}");
+                    var rewardRange = $"{pg.Rewards.Min:0.000} ... {pg.Rewards.Mean:0.000} ... {pg.Rewards.Max:0.000}";
+                    Console.WriteLine($"{pg.Samples:0000}  REWARDS: {rewardRange}");
+                    this.uiFitnessPlot.AddPoint(pg.Samples, 0, pg.Rewards.Mean);
                 }
-
-                this.uiFitnessPlot.AddPoint(trainer.Samples, Controller.Loss.Mean, Controller.Rewards.Mean);
+                else
+                {
+                    var dqn = this.Controller as DQNController;
+                    if (dqn != null)
+                    {
+                        var trainer = dqn.Trainer;
+                        var rewardRange = $"{dqn.Rewards.Min:0.000} ... {dqn.Rewards.Mean:0.000} ... {dqn.Rewards.Max:0.000}";
+                        Console.WriteLine($"{trainer.Samples:0000}   LOSS: {dqn.Loss.Mean:0.00000000}   REWARDS: {rewardRange}");
+                        if (uiSettings.ShowBallStatus)
+                        {
+                            Console.WriteLine($"   - Replay count: {trainer.ReplayMemoryCount}");
+                            Console.WriteLine($"   - QValue mean: {dqn.QValues.Mean:0.000} / {dqn.QValues.StandardDeviation:0.000}");
+                            Console.WriteLine($"   - QValue range: {dqn.QValues.Min:0.000} ... {dqn.QValues.Max:0.000}");
+                        }
+                        this.uiFitnessPlot.AddPoint(trainer.Samples, dqn.Loss.Mean, dqn.Rewards.Mean);
+                    }
+                }
             }
             else
             {
@@ -116,6 +128,8 @@ namespace NeuralMotion
         {
             if (!this.uiSettings.DontShowSim)
             {
+                this.BoxArena.RealTime = uiSettings.RealTime;
+                
                 this.uiArena.ShowKicks = uiSettings.ShowBallStatus;
                 this.uiArena.ShowPosition = uiSettings.ShowBallStatus;
                 this.uiArena.ShowSpeed = uiSettings.ShowBallStatus;

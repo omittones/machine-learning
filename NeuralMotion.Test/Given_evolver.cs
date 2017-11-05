@@ -77,13 +77,13 @@ namespace NeuralMotion.Test
             var ba = b.GetGenes().Select(g => (double) g.Value).ToArray();
 
             var avg = ada.Zip(aa, (x, y) => Math.Abs(x - y)).Average();
-            Assert.True(avg > 3);
+            Assert.True(avg > 0.1);
 
             avg = aa.Zip(ba, (x, y) => Math.Abs(x - y)).Average();
-            Assert.True(avg > 3);
+            Assert.True(avg > 0.1);
 
             avg = ada.Zip(ba, (x, y) => Math.Abs(x - y)).Average();
-            Assert.True(avg > 3);
+            Assert.True(avg > 0.1);
         }
 
         [Fact]

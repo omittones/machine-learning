@@ -42,10 +42,7 @@ namespace NeuralMotion.Evolution
 
         public double Evaluate(double[] genes)
         {
-            this.simulator.RunAsync((index, ball) =>
-            {
-                ball.Position = Position(index);
-            }).Wait();
+            this.simulator.Run().Wait();
 
             this.BestBall = new BallFitness(fitness: double.MinValue);
             var calculated = this

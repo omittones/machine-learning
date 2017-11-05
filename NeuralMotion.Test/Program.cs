@@ -74,7 +74,7 @@ namespace NeuralMotion.Test
         {
             var net = new Net<double>();
             net.AddLayer(new InputLayer(1, 1, 2));
-            net.AddLayer(new FullyConnLayer(30));
+            net.AddLayer(new FullyConnLayer(40));
             net.AddLayer(new LeakyReluLayer());
             net.AddLayer(new FullyConnLayer(20));
             net.AddLayer(new LeakyReluLayer());
@@ -87,13 +87,13 @@ namespace NeuralMotion.Test
 
             var rewards = new MovingStatistics(100);
             var means = new MovingStatistics(100);
-            var pgTrainer = new ReinforcementTrainer(net, rnd)
+            var pgTrainer = new ReinforcementTrainer(net)
             {
-                BatchSize = 1000,
+                BatchSize = 10000,
                 Momentum = 0,
                 L2Decay = 0,
                 L1Decay = 0,
-                LearningRate = 0.1,
+                LearningRate = 0.05,
                 RewardDiscountGamma = 0,
                 ApplyBaselineAndNormalizeReturns = true
             };

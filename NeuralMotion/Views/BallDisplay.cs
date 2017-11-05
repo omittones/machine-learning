@@ -109,6 +109,11 @@ namespace NeuralMotion.Views
                     {
                         e.Graphics.DrawString(text, fontText, penBall.Brush, point.Offset(-radius, halfRadius * 1.1f));
                     }
+
+                    var indicators = ball.Indicators;
+                    if (indicators != null)
+                        foreach (var indicator in indicators)
+                            indicator?.Draw(e.Graphics);
                 }
             }
         }

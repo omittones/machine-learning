@@ -32,6 +32,8 @@ namespace NeuralMotion.Simulator
         
         public int CollisionCount => collisions.Count;
 
+        public IIndicator[] Indicators { get; set; }
+
         public void UnsetCollision(Ball collidedBall)
         {
             collisions.Remove(collidedBall.Id);

@@ -5,12 +5,13 @@ namespace NeuralMotion
 {
     public partial class Settings : Form
     {
-        public new Main Owner { get; private set; }
-
         public bool WriteStatus => uiWriteLog.Checked;
         public bool DontShowSim => uiDontShowSim.Checked;
         public bool ShowBallStatus => uiShowBallStatusText.Checked;
-        
+        public bool RealTime { get; set; }
+        public double Alpha { get; set; }
+        public double Epsilon { get; set; }
+
         public Settings()
         {
             InitializeComponent();
@@ -20,35 +21,39 @@ namespace NeuralMotion
             this.uiToggleSpeed.Text = "Fast";
             this.uiDecreaseLearningRate.Click += DecreaseLearningRate;
             this.uiIncreaseLearningRate.Click += IncreaseLearningRate;
+
+            this.RealTime = true;
+            this.Alpha = 0.1;
+            this.Epsilon = 0.1;
         }
 
         private void NotifyAboutLR()
         {
-            Console.WriteLine($"Adjusting LR to {Owner.Controller.Trainer.Alpha:0.0000000}");
+            Console.WriteLine($"Adjusting LR to {this.Alpha:0.0000000}");
         }
 
         private void IncreaseLearningRate(object sender, EventArgs e)
         {
-            Owner.Controller.Trainer.Alpha *= 1.5;
+            this.Alpha *= 1.5;
             NotifyAboutLR();
         }
 
         private void DecreaseLearningRate(object sender, EventArgs e)
         {
-            Owner.Controller.Trainer.Alpha /= 1.5;
-            if (Owner.Controller.Trainer.Alpha < 0.000001)
-                Owner.Controller.Trainer.Alpha = 0.000001;
+            this.Alpha /= 1.5;
+            if (this.Alpha < 0.000001)
+                this.Alpha = 0.000001;
             NotifyAboutLR();
         }
-                
+
         protected override void OnPaint(PaintEventArgs e)
         {
-            if (Owner.BoxArena.RealTime)
+            if (this.RealTime)
                 uiToggleSpeed.Text = "Fast";
             else
                 uiToggleSpeed.Text = "Slow";
 
-            if (Owner.Controller.Trainer.Epsilon == 0)
+            if (this.Epsilon == 0)
                 uiToggleExploration.Text = "Exploration == Off";
             else
                 uiToggleExploration.Text = "Exploration == On";
@@ -58,31 +63,24 @@ namespace NeuralMotion
 
         private void OnToggleSpeed(object sender, EventArgs e)
         {
-            if (Owner.BoxArena.RealTime)
-                Owner.BoxArena.RealTime = false;
+            if (this.RealTime)
+                this.RealTime = false;
             else
-                Owner.BoxArena.RealTime = true;
+                this.RealTime = true;
             Refresh();
-        }
-
-        protected override void OnLoad(EventArgs e)
-        {
-            base.OnLoad(e);
-
-            this.Owner = (Main) base.Owner;
         }
 
         double oldExp;
         private void ToggleExploration(object sender, EventArgs e)
         {
-            if (Owner.Controller.Trainer.Epsilon == 0)
+            if (this.Epsilon == 0)
             {
-                Owner.Controller.Trainer.Epsilon = oldExp;
+                this.Epsilon = oldExp;
             }
             else
             {
-                oldExp = Owner.Controller.Trainer.Epsilon;
-                Owner.Controller.Trainer.Epsilon = 0;
+                oldExp = this.Epsilon;
+                this.Epsilon = 0;
             }
         }
     }
