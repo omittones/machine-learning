@@ -97,11 +97,11 @@
     <Compile Include="Given_evolver.cs" />
     <Compile Include="Given_parameter_adjuster.cs" />
     <Compile Include="Given_utils.cs" />
-    <Compile Include="Main.cs">
+    <Compile Include="PlotWindow.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="Main.Designer.cs">
-      <DependentUpon>Main.cs</DependentUpon>
+    <Compile Include="PlotWindow.Designer.cs">
+      <DependentUpon>PlotWindow.cs</DependentUpon>
     </Compile>
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
@@ -135,8 +135,8 @@
     <Analyzer Include="..\packages\xunit.analyzers.0.7.0\analyzers\dotnet\cs\xunit.analyzers.dll" />
   </ItemGroup>
   <ItemGroup>
-    <EmbeddedResource Include="Main.resx">
-      <DependentUpon>Main.cs</DependentUpon>
+    <EmbeddedResource Include="PlotWindow.resx">
+      <DependentUpon>PlotWindow.cs</DependentUpon>
     </EmbeddedResource>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

@@ -2,13 +2,13 @@
 
 namespace NeuralMotion.Test
 {
-    partial class Main
+    partial class PlotWindow
     {
         /// <summary>
         /// Required designer variable.
         /// </summary>
         private System.ComponentModel.IContainer components = null;
-        private PlotView plotView;
+        private OxyPlot.WindowsForms.PlotView plotView;
 
 
         /// <summary>

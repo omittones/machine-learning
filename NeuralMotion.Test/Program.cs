@@ -11,88 +11,63 @@ using System.Threading.Tasks;
 using ConvNetSharp.Core.Training;
 using NeuralMotion.Evolution;
 using ConvNetSharp.Core.Layers;
+using System.Collections.Generic;
+using OxyPlot;
+using OxyPlot.Axes;
+using OxyPlot.Series;
 
 namespace NeuralMotion.Test
 {
     public static partial class Program
     {
+        public static VolumeBuilder<double> build => BuilderInstance<double>.Volume;
+        public static Random rnd = new Random(DateTime.Now.Millisecond);
+
         public static void Main(string[] args)
         {
-            //var input = B.SameAs(new double[] { 1, 2, 3, 1, 1, 0, 0, 1, 0 }, Shape.From(1, 1, 3, 3));
-            //var mu = MuPolicy(input);
-            //Console.WriteLine("Mu:");
-            //Console.WriteLine(mu.ToString("0.00"));
-
-            //var log_mu = LogMuPolicy(mu);
-            //Console.WriteLine("Log Mu:");
-            //Console.WriteLine(log_mu.ToString("0.00"));
-
-            ////var alt_log_mu = AltLogMuPolicy(mu);
-            ////Console.WriteLine(alt_log_mu.ToString("0.00"));
-            ////return;
-
-            //var grad_log_mu = GradientLogMuPolicy(input, mu, 1, 1);
-            //Console.WriteLine("Grad Log Mu (1, 1):");
-            //Console.WriteLine(grad_log_mu.ToString());
-
-            //input = B.SameAs(new double[] { 0, 0, 0, 0, 0, 0, 0, 0, 0 }, Shape.From(1, 1, 3, 3));
-            //mu = MuPolicy(input);
-            //var grad = PolicyGradient(input, mu,
-            //new int[][] {
-            //    new[] { 0, 0 },
-            //    new[] { 1 }
-            //}, new double[] { 0.1, 1.0 });
-
-            //Console.WriteLine("Policy Grad:");
-            //Console.WriteLine(grad.ToString());
-
-            //return;
-
-            //var net = new Net<double>();
-            //net.AddLayer(new InputLayer(1, 1, 2));
-            //net.AddLayer(new FullyConnLayer(20));
-            //net.AddLayer(new LeakyReluLayer());
-            //net.AddLayer(new FullyConnLayer(10));
-            //net.AddLayer(new LeakyReluLayer());
-            //net.AddLayer(new FullyConnLayer(2));
-            //net.AddLayer(new ReinforcementLayer());
-
-            //var net = new Net<double>();
-            //net.AddLayer(new InputLayer(1, 1, 2));
-            //net.AddLayer(new FullyConnLayer(20));
-            //net.AddLayer(new LeakyReluLayer());
-            //net.AddLayer(new FullyConnLayer(10));
-            //net.AddLayer(new LeakyReluLayer());
-            //net.AddLayer(new FullyConnLayer(2));
-            //net.AddLayer(new RegressionLayer());
-
-            var rnd = new Random(DateTime.Now.Millisecond);
-
+            //ShowSet();
             RunPolicyGradients(rnd);
             //RunQLearning(rnd);
             //RunStochastic(rnd);
         }
 
-        private static Task PlotOutput(Net<double> net, bool showClasses = false)
+        private static void ShowSet()
         {
-            var task = Task.Run(() =>
+            var vol = build.SameAs(1, 1, 2, 1000);
+            vol.MapInplace(v => rnd.NextDouble());
+            var classes = GetClassesForSpiral(vol);
+
+            var plotModel = new PlotModel
             {
-                Application.EnableVisualStyles();
-                Application.SetCompatibleTextRenderingDefault(false);
-                Application.Run(new Main(net)
+                Axes =
                 {
-                    ShowClasses = showClasses
-                });
+                    new LinearColorAxis
+                    {
+                         Palette = new OxyPalette(OxyColor.FromRgb(255, 0, 0), OxyColor.FromRgb(0, 0, 255))
+                    }
+                },
+                PlotType = PlotType.XY,
+                Series =
+                {
+                    new ScatterSeries
+                    {
+                         MarkerType = MarkerType.Circle,
+                    }
+                }
+            };
 
-                Console.WriteLine("Display thread stopped!");
-            });
+            var series = plotModel.Series[0] as ScatterSeries;
+            for (var b = 0; b < vol.BatchSize; b++)
+                series.Points.Add(new ScatterPoint(vol.Get(0, 0, 0, b), vol.Get(0, 0, 1, b), size: 2, value: classes[b]));
 
-            while (task.Status == TaskStatus.WaitingForActivation ||
-                task.Status == TaskStatus.WaitingToRun ||
-                task.Status == TaskStatus.Created)
-                Thread.Sleep(0);
+            PlotWindow
+                .Show(() => new PlotWindow(plotModel))
+                .Wait();
+        }
 
-            return task;
+        private static Task PlotNet(Net<double> net, bool showClasses = false)
+        {
+            return PlotWindow.Show(() => new PlotWindow(net) { ShowClasses = showClasses });
         }
 
         private static void RunPolicyGradients(Random rnd)
@@ -108,7 +83,7 @@ namespace NeuralMotion.Test
 
             ShowAccuracy(rnd, net);
 
-            var task = PlotOutput(net);
+            var task = PlotNet(net);
 
             var rewards = new MovingStatistics(100);
             var means = new MovingStatistics(100);
@@ -154,7 +129,8 @@ namespace NeuralMotion.Test
                 }
 
                 inputs.MapInplace(v => rnd.NextDouble());
-                var expected = GetClassesForCenter(inputs);
+                var expected = GetClassesForSpiral(inputs);
+                //var expected = GetClassesForCenter(inputs);
                 //var expected = GetClassesForBorders(inputs);
                 //var expected = Enumerable.Repeat(0, inputs.BatchSize).ToArray();
 
@@ -203,7 +179,7 @@ namespace NeuralMotion.Test
 
             ShowAccuracy(rnd, net);
 
-            var task = PlotOutput(net);
+            var task = PlotNet(net);
 
             var loss = new MovingStatistics(1000);
             var qvalues = new MovingStatistics(1000);
@@ -285,7 +261,7 @@ namespace NeuralMotion.Test
 
             ShowAccuracy(rnd, net);
 
-            var task = PlotOutput(net);
+            var task = PlotNet(net);
 
             var trainer = new CrossEntropyMethod(net)
             {
@@ -465,6 +441,37 @@ namespace NeuralMotion.Test
                     output[n] = 1;
                 else
                     output[n] = 0;
+            }
+
+            return output;
+        }
+
+        private static int[] GetClassesForSpiral(Volume<double> inputs)
+        {
+            var sx = new List<double>();
+            var sy = new List<double>();
+            for (var angle = 0.0; angle < Math.PI * 3; angle += 0.1)
+            {
+                var radius = 0.5 / (Math.PI * 3) * angle;
+                sx.Add(0.5 + Math.Sin(angle) * radius);
+                sy.Add(0.5 + Math.Cos(angle) * radius);
+            }
+
+            var output = new int[inputs.BatchSize];
+            for (var n = 0; n < inputs.BatchSize; n++)
+            {
+                var ix = inputs.Get(0, 0, 0, n);
+                var iy = inputs.Get(0, 0, 1, n);
+                double minDist = double.MaxValue;
+                for (var i = 0; i < sx.Count; i++)
+                {
+                    var d1 = ix - sx[i];
+                    var d2 = iy - sy[i];
+                    var dist = Math.Sqrt(d1 * d1 + d2 * d2);
+                    if (minDist > dist)
+                        minDist = dist;
+                }
+                output[n] = minDist < 0.05 ? 1 : 0;
             }
 
             return output;

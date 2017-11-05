@@ -6,11 +6,13 @@ using OxyPlot.Axes;
 using OxyPlot.Series;
 using System;
 using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using System.Windows.Forms;
 
 namespace NeuralMotion.Test
 {
-    public partial class Main : Form
+    public partial class PlotWindow : Form
     {
         public bool ShowClasses { get; set; }
 
@@ -74,7 +76,45 @@ namespace NeuralMotion.Test
         protected override void OnShown(EventArgs e)
         {
             base.OnShown(e);
+            
+            this.plotView.Model = plotModel;
+            this.plotView.Controller = null;
 
+            this.refreshTimer.Interval = 100;
+            this.refreshTimer.Enabled = true;
+        }
+
+        public static Task Show(Func<PlotWindow> factory)
+        {
+            var task = Task.Run(() =>
+            {
+                Application.EnableVisualStyles();
+                Application.SetCompatibleTextRenderingDefault(false);
+                Application.Run(factory());
+                Console.WriteLine("Display thread stopped!");
+            });
+
+            while (task.Status == TaskStatus.WaitingForActivation ||
+                task.Status == TaskStatus.WaitingToRun ||
+                task.Status == TaskStatus.Created)
+                Thread.Sleep(0);
+
+            return task;
+        }
+
+        public PlotWindow(PlotModel model)
+        {
+            InitializeComponent();
+
+            this.plotModel = model;
+            this.refreshTimer.Enabled = false;
+        }
+
+        public PlotWindow(Net<double> net)
+        {
+            InitializeComponent();
+
+            this.net = net;
             this.plotModel = new PlotModel()
             {
                 Axes =
@@ -100,19 +140,6 @@ namespace NeuralMotion.Test
                     }
                 }
             };
-
-            this.plotView.Model = plotModel;
-            this.plotView.Controller = null;
-
-            this.refreshTimer.Interval = 100;
-            this.refreshTimer.Enabled = true;
-        }
-
-        public Main(Net<double> net)
-        {
-            InitializeComponent();
-
-            this.net = net;
             this.refreshTimer.Tick += this.RefreshSeries;
         }
     }
