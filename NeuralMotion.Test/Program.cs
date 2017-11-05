@@ -187,7 +187,7 @@ namespace NeuralMotion.Test
             var inputs = new double[] { 0, 0 };
             var qLearner = new DQNTrainer(net, 2)
             {
-                Alpha = 0.001,
+                LearningRate = 0.001,
                 Epsilon = 0.1,
                 ReplaySkipCount = 1,
                 ReplayMemorySize = 10000,
@@ -213,14 +213,14 @@ namespace NeuralMotion.Test
                     else
                     {
                         if (key.Key == ConsoleKey.UpArrow)
-                            qLearner.Alpha *= 1.5;
+                            qLearner.LearningRate *= 1.5;
                         if (key.Key == ConsoleKey.DownArrow)
-                            qLearner.Alpha /= 1.5;
+                            qLearner.LearningRate /= 1.5;
 
-                        if (qLearner.Alpha > 0.9)
-                            qLearner.Alpha = 0.9;
+                        if (qLearner.LearningRate > 0.9)
+                            qLearner.LearningRate = 0.9;
 
-                        Console.WriteLine($"LR: {qLearner.Alpha:0.000000}");
+                        Console.WriteLine($"LR: {qLearner.LearningRate:0.000000}");
                         Thread.Sleep(500);
                     }
                 }

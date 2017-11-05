@@ -20,10 +20,11 @@ namespace NeuralMotion
 
         public Main()
         {
-            this.Controller = new PolicyGradientsController(500, 5);
+            //this.Controller = new PolicyGradientsController(500, 5);
+            this.Controller = new DQNController();
             this.BoxArena = new BoxArena(SetupEnvironment, Controller, 10, 0.06f)
             {
-                LimitSimulationDuration = 1000,
+                LimitSimulationDuration = 500,
                 RestartOnEnd = true,
                 RealTime = false
             };
