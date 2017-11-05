@@ -74,9 +74,9 @@ namespace NeuralMotion.Test
         {
             var net = new Net<double>();
             net.AddLayer(new InputLayer(1, 1, 2));
-            net.AddLayer(new FullyConnLayer(20));
+            net.AddLayer(new FullyConnLayer(30));
             net.AddLayer(new LeakyReluLayer());
-            net.AddLayer(new FullyConnLayer(10));
+            net.AddLayer(new FullyConnLayer(20));
             net.AddLayer(new LeakyReluLayer());
             net.AddLayer(new FullyConnLayer(2));
             net.AddLayer(new ReinforcementLayer());
@@ -94,7 +94,8 @@ namespace NeuralMotion.Test
                 L2Decay = 0,
                 L1Decay = 0,
                 LearningRate = 0.1,
-                RewardDiscountGamma = 0
+                RewardDiscountGamma = 0,
+                ApplyBaselineAndNormalizeReturns = true
             };
             const int rolloutSteps = 10;
 
@@ -229,7 +230,7 @@ namespace NeuralMotion.Test
                     inputs = inputs.Select(v => rnd.NextDouble()).ToArray();
                     for (var i = 0; i < 1; i++)
                     {
-                        var expectedActions = GetClassesForCenter(inputs);
+                        var expectedActions = GetClassesForSpiral(inputs);
 
                         var predictedAction = qLearner.Act(inputs.ToArray());
 
@@ -329,7 +330,7 @@ namespace NeuralMotion.Test
                     {
                         validation = BuilderInstance.Volume.SameAs(Shape.From(1, 1, 2, batchSize));
                         validation.Storage.MapInplace(v => rnd.NextDouble());
-                        expectedValidation = GetClassesForCenter(validation);
+                        expectedValidation = GetClassesForSpiral(validation);
                     }
 
                     trainer.Train(sample =>
