@@ -9,6 +9,8 @@ namespace NeuralMotion.Simulator
 {
     public partial class BallArena : IEnvironment
     {
+        private static Random rnd = new Random();
+
         public Ball[] EngineBalls { get; private set; }
         public float TimeStep { get; private set; }
         public float BallRadius { get; private set; }
@@ -20,12 +22,10 @@ namespace NeuralMotion.Simulator
             get { return this.BallRadius / this.TimeStep; }
         }
 
-        private readonly Action<int, Ball> ballConfiguration;
         private readonly CollisionDetector collisionDetector;
         private readonly IController controller;
 
         public BallArena(
-            Action<int, Ball> ballConfiguration,
             IController controller,
             int noBalls = 5,
             float ballRadius = 0.06f)
@@ -34,7 +34,6 @@ namespace NeuralMotion.Simulator
 
             this.TimeStep = 0.02f;
             this.BallRadius = ballRadius;
-            this.ballConfiguration = ballConfiguration;
             this.controller = controller;
             this.collisionDetector = new CollisionDetector
             {
@@ -46,6 +45,21 @@ namespace NeuralMotion.Simulator
             for (var index = 0; index < EngineBalls.Length; index++)
                 this.EngineBalls[index] = new Ball(index);
             this.prevAccels = new PointF[this.EngineBalls.Length];
+        }
+
+        private void InitBall(int index, Ball ball)
+        {
+            ball.Speed = new System.Drawing.PointF
+            {
+                X = (float)rnd.NextDouble() * 2 - 1.0f,
+                Y = (float)rnd.NextDouble() * 2 - 1.0f
+            };
+            ball.Speed = ball.Speed.Scale(0.5f);
+            ball.Position = new System.Drawing.PointF
+            {
+                X = (float)rnd.NextDouble() * 2 - 1.0f,
+                Y = (float)rnd.NextDouble() * 2 - 1.0f
+            };
         }
 
         public float RandomPosition(RandomEx generator)
@@ -68,7 +82,7 @@ namespace NeuralMotion.Simulator
                 EngineBalls[index].Speed = new PointF(0, 0);
                 EngineBalls[index].Acceleration = new PointF(0, 0);
 
-                ballConfiguration(index, EngineBalls[index]);
+                InitBall(index, EngineBalls[index]);
 
                 EngineBalls[index].StartingPosition = EngineBalls[index].Position;
             }

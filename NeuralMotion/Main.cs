@@ -25,7 +25,7 @@ namespace NeuralMotion
         {
             //this.Controller = new PolicyGradientsController(500, 5);
             this.Controller = new DQNController();
-            this.Environment = new BallArena(SetupEnvironment, Controller, 10, 0.06f);
+            this.Environment = new BallArena(Controller, 10, 0.06f);
             this.Renderer = new BallArenaRenderer(this.Environment);
             this.Session = new Session(this.Controller, this.Environment)
             {
@@ -72,22 +72,7 @@ namespace NeuralMotion
             this.refreshTimer.Enabled = true;
             this.infoTimer.Enabled = true;
         }
-
-        private void SetupEnvironment(int index, Ball ball)
-        {
-            ball.Speed = new System.Drawing.PointF
-            {
-                X = (float)rnd.NextDouble() * 2 - 1.0f,
-                Y = (float)rnd.NextDouble() * 2 - 1.0f
-            };
-            ball.Speed = ball.Speed.Scale(0.5f);
-            ball.Position = new System.Drawing.PointF
-            {
-                X = (float)rnd.NextDouble() * 2 - 1.0f,
-                Y = (float)rnd.NextDouble() * 2 - 1.0f
-            };
-        }
-
+        
         private void ShowInfo(object sender, EventArgs args)
         {
             if (this.simulation.Status == TaskStatus.Running)
