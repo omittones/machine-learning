@@ -22,12 +22,13 @@ namespace NeuralMotion.Test
     {
         public static VolumeBuilder<double> build => BuilderInstance<double>.Volume;
         public static Random rnd = new Random(DateTime.Now.Millisecond);
+        public static Func<Volume<double>, int[]> getClasses = GetClassesForSpiral;
 
         public static void Main(string[] args)
         {
             //ShowSet();
-            RunPolicyGradients(rnd);
-            //RunQLearning(rnd);
+            //RunPolicyGradients(rnd);
+            RunQLearning(rnd);
             //RunStochastic(rnd);
         }
 
@@ -35,7 +36,7 @@ namespace NeuralMotion.Test
         {
             var vol = build.SameAs(1, 1, 2, 1000);
             vol.MapInplace(v => rnd.NextDouble());
-            var classes = GetClassesForSpiral(vol);
+            var classes = getClasses(vol);
 
             var plotModel = new PlotModel
             {
@@ -130,10 +131,7 @@ namespace NeuralMotion.Test
                 }
 
                 inputs.MapInplace(v => rnd.NextDouble());
-                var expected = GetClassesForSpiral(inputs);
-                //var expected = GetClassesForCenter(inputs);
-                //var expected = GetClassesForBorders(inputs);
-                //var expected = Enumerable.Repeat(0, inputs.BatchSize).ToArray();
+                var expected = getClasses(inputs);
 
                 var pathRewards = new double[pgTrainer.BatchSize / rolloutSteps];
                 var pathActions = new int[pgTrainer.BatchSize / rolloutSteps][];
@@ -171,9 +169,9 @@ namespace NeuralMotion.Test
         {
             var net = new Net<double>();
             net.AddLayer(new InputLayer(1, 1, 2));
-            net.AddLayer(new FullyConnLayer(20));
+            net.AddLayer(new FullyConnLayer(30));
             net.AddLayer(new LeakyReluLayer());
-            net.AddLayer(new FullyConnLayer(10));
+            net.AddLayer(new FullyConnLayer(20));
             net.AddLayer(new LeakyReluLayer());
             net.AddLayer(new FullyConnLayer(2));
             net.AddLayer(new RegressionLayer());
@@ -187,14 +185,15 @@ namespace NeuralMotion.Test
             var inputs = new double[] { 0, 0 };
             var qLearner = new DQNTrainer(net, 2)
             {
-                LearningRate = 0.001,
+                LearningRate = 0.01,
                 Epsilon = 0.1,
                 ReplaySkipCount = 1,
-                ReplayMemorySize = 10000,
+                ReplayMemorySize = 1000,
                 ReplayMemoryDiscardStrategy = ExperienceDiscardStrategy.First,
-                ReplaysPerIteration = 100,
+                ReplaysPerIteration = 10,
                 Gamma = 0,
-                ClampErrorTo = double.MaxValue
+                ClampErrorTo = 1,
+                L1Decay = 0.2
             };
 
             while (task.Status == TaskStatus.Running)
@@ -230,7 +229,7 @@ namespace NeuralMotion.Test
                     inputs = inputs.Select(v => rnd.NextDouble()).ToArray();
                     for (var i = 0; i < 1; i++)
                     {
-                        var expectedActions = GetClassesForSpiral(inputs);
+                        var expectedActions = getClasses(inputs);
 
                         var predictedAction = qLearner.Act(inputs.ToArray());
 
@@ -330,7 +329,7 @@ namespace NeuralMotion.Test
                     {
                         validation = BuilderInstance.Volume.SameAs(Shape.From(1, 1, 2, batchSize));
                         validation.Storage.MapInplace(v => rnd.NextDouble());
-                        expectedValidation = GetClassesForSpiral(validation);
+                        expectedValidation = getClasses(validation);
                     }
 
                     trainer.Train(sample =>
@@ -365,7 +364,7 @@ namespace NeuralMotion.Test
             {
                 var validation = BuilderInstance.Volume.SameAs(Shape.From(1, 1, 2, 1000));
                 validation.Storage.MapInplace(v => rnd.NextDouble());
-                var expectedValidation = GetClassesForBorders(validation);
+                var expectedValidation = getClasses(validation);
 
                 var output = net.Forward(validation);
                 var predictedValidation = new int[validation.Shape.GetDimension(3)];
@@ -387,7 +386,7 @@ namespace NeuralMotion.Test
             {
                 var validation = BuilderInstance.Volume.SameAs(Shape.From(1, 1, 2, batchSize));
                 validation.Storage.MapInplace(v => rnd.NextDouble());
-                var expectedValidation = GetClassesForBorders(validation);
+                var expectedValidation = getClasses(validation);
 
                 var output = net.Forward(validation);
 

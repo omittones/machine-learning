@@ -35,7 +35,7 @@ namespace NeuralMotion
             this.refreshTimer = new System.Windows.Forms.Timer(this.components);
             this.bwBrains = new System.ComponentModel.BackgroundWorker();
             this.infoTimer = new System.Windows.Forms.Timer(this.components);
-            this.uiArena = new NeuralMotion.Views.BallDisplay();
+            this.uiDisplay = new NeuralMotion.Views.EnvironmentDisplay();
             this.uiFitnessPlot = new NeuralMotion.Views.FitnessPlot();
             this.SuspendLayout();
             // 
@@ -50,18 +50,13 @@ namespace NeuralMotion
             // 
             // uiArena
             // 
-            this.uiArena.Arena = null;
-            this.uiArena.BackColor = System.Drawing.Color.Black;
-            this.uiArena.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.uiArena.Location = new System.Drawing.Point(0, 0);
-            this.uiArena.Margin = new System.Windows.Forms.Padding(1);
-            this.uiArena.Name = "uiArena";
-            this.uiArena.ShowKicks = true;
-            this.uiArena.ShowPosition = true;
-            this.uiArena.ShowPreviewFlag = false;
-            this.uiArena.ShowSpeed = true;
-            this.uiArena.Size = new System.Drawing.Size(621, 188);
-            this.uiArena.TabIndex = 0;
+            this.uiDisplay.BackColor = System.Drawing.Color.Black;
+            this.uiDisplay.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.uiDisplay.Location = new System.Drawing.Point(0, 0);
+            this.uiDisplay.Margin = new System.Windows.Forms.Padding(1);
+            this.uiDisplay.Name = "uiArena";
+            this.uiDisplay.Size = new System.Drawing.Size(621, 188);
+            this.uiDisplay.TabIndex = 0;
             // 
             // uiFitnessPlot
             // 
@@ -83,7 +78,7 @@ namespace NeuralMotion
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.BackColor = System.Drawing.SystemColors.Control;
             this.ClientSize = new System.Drawing.Size(621, 555);
-            this.Controls.Add(this.uiArena);
+            this.Controls.Add(this.uiDisplay);
             this.Controls.Add(this.uiFitnessPlot);
             this.DoubleBuffered = true;
             this.Location = new System.Drawing.Point(20, 50);
@@ -100,7 +95,7 @@ namespace NeuralMotion
         private System.ComponentModel.BackgroundWorker bwEngine;
         private System.Windows.Forms.Timer refreshTimer;
         private System.ComponentModel.BackgroundWorker bwBrains;
-        private BallDisplay uiArena;
+        private EnvironmentDisplay uiDisplay;
         private FitnessPlot uiFitnessPlot;
         private System.Windows.Forms.Timer infoTimer;
     }

@@ -7,20 +7,13 @@ using Util;
 
 namespace NeuralMotion.Simulator
 {
-    public partial class BoxArena
+    public partial class BallArena : IEnvironment
     {
         public Ball[] EngineBalls { get; private set; }
         public float TimeStep { get; private set; }
         public float BallRadius { get; private set; }
         public float CurrentSimulationTime { get; private set; }
-
-        private CancellationTokenSource token;
-
         public int TotalCollisions { get; private set; }
-
-        public bool RealTime { set; get; }
-        public bool RestartOnEnd { set; get; }
-        public float? LimitSimulationDuration { get; set; }
 
         public float MaximumBallSpeed
         {
@@ -28,11 +21,10 @@ namespace NeuralMotion.Simulator
         }
 
         private readonly Action<int, Ball> ballConfiguration;
-        private readonly IController controller;
         private readonly CollisionDetector collisionDetector;
-        private Task task;
+        private readonly IController controller;
 
-        public BoxArena(
+        public BallArena(
             Action<int, Ball> ballConfiguration,
             IController controller,
             int noBalls = 5,
@@ -41,10 +33,7 @@ namespace NeuralMotion.Simulator
             noBalls = Math.Max(1, noBalls);
 
             this.TimeStep = 0.02f;
-            this.LimitSimulationDuration = 10;
-            this.RealTime = true;
             this.BallRadius = ballRadius;
-            this.RestartOnEnd = false;
             this.ballConfiguration = ballConfiguration;
             this.controller = controller;
             this.collisionDetector = new CollisionDetector
@@ -64,47 +53,7 @@ namespace NeuralMotion.Simulator
             return generator.NextF(-1.0f + this.BallRadius, 1.0f - this.BallRadius);
         }
 
-        public Task Reset()
-        {
-            if (this.task == null)
-                throw new Exception("Not running!");
-            this.token.Cancel();
-            this.task.Wait();
-
-            return this.Run();
-        }
-
-        public void Stop()
-        {
-            if (this.task == null)
-                throw new Exception("Not running!");
-            this.token.Cancel();
-            this.task.Wait();
-        }
-
-        public Task Run()
-        {
-            if (this.task != null && (
-                task.Status == TaskStatus.Running ||
-                task.Status == TaskStatus.WaitingForActivation ||
-                task.Status == TaskStatus.WaitingToRun))
-                throw new Exception("Already started!");
-
-            if (task != null)
-            {
-                task.Dispose();
-                token.Dispose();
-            }
-
-            this.Initialize();
-
-            this.token = new CancellationTokenSource();
-            this.task = Task.Run(() => Loop(token.Token), token.Token);
-
-            return this.task;
-        }
-
-        private void Initialize()
+        public void Reset()
         {
             this.TotalCollisions = 0;
             for (var index = 0; index < EngineBalls.Length; index++)
@@ -129,43 +78,13 @@ namespace NeuralMotion.Simulator
         private float lastTime = -1;
         private PointF[] prevAccels;
 
-        private void Loop(CancellationToken token)
+        public void Step()
         {
-            try
-            {
-                while (this.RestartOnEnd)
-                {
-                    while (!this.LimitSimulationDuration.HasValue ||
-                            this.CurrentSimulationTime < this.LimitSimulationDuration)
-                    {
-                        if (token.IsCancellationRequested)
-                            return;
+            PhysicsLoop();
 
-                        var start = DateTime.UtcNow;
+            DecisionLoop();
 
-                        PhysicsLoop();
-
-                        DecisionLoop();
-
-                        this.CurrentSimulationTime += this.TimeStep;
-
-                        if (this.RealTime)
-                        {
-                            var duration = DateTime.UtcNow.Subtract(start).TotalSeconds;
-                            duration = this.TimeStep - duration;
-                            if (duration > 0)
-                                Thread.Sleep((int)(duration * 1000));
-                        }
-                    }
-
-                    Initialize();
-                }
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine(ex.Message);
-                throw;
-            }
+            this.CurrentSimulationTime += this.TimeStep;
         }
 
         private void DecisionLoop()
@@ -178,7 +97,7 @@ namespace NeuralMotion.Simulator
                     this.controller.Control(this.EngineBalls, ball);
             }
         }
-        
+
         private void PhysicsLoop()
         {
             var detections = this.collisionDetector.Detect(this.EngineBalls, this.CurrentSimulationTime);

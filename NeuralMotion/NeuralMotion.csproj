@@ -112,13 +112,23 @@
     <Compile Include="Path.cs" />
     <Compile Include="PolicyGradientsController.cs" />
     <Compile Include="RolloutCollection.cs" />
+    <Compile Include="Simulator\Balls\BallArena.cs" />
+    <Compile Include="Simulator\IEnvironment.cs" />
+    <Compile Include="Simulator\Session.cs" />
     <Compile Include="Simulator\IIndicator.cs" />
     <Compile Include="Simulator\Line.cs" />
-    <Compile Include="Views\BallDisplay.cs">
+    <Compile Include="Simulator\BoxSpace.cs" />
+    <Compile Include="Simulator\DiscreteSpace.cs" />
+    <Compile Include="Simulator\MountainCar\MountainCar.cs" />
+    <Compile Include="Simulator\PointD.cs" />
+    <Compile Include="Simulator\Space.cs" />
+    <Compile Include="Simulator\MountainCar\StepReturnType.cs" />
+    <Compile Include="Simulator\Balls\BallArenaRenderer.cs" />
+    <Compile Include="Views\EnvironmentDisplay.cs">
       <SubType>UserControl</SubType>
     </Compile>
-    <Compile Include="Views\BallDisplay.Designer.cs">
-      <DependentUpon>BallDisplay.cs</DependentUpon>
+    <Compile Include="Views\EnvironmentDisplay.Designer.cs">
+      <DependentUpon>EnvironmentDisplay.cs</DependentUpon>
     </Compile>
     <Compile Include="Evolution\Annealing\SimulatedAnnealing.cs" />
     <Compile Include="Evolution\ChromosomeEvolverExtensions.cs" />
@@ -153,7 +163,7 @@
     </Compile>
     <Compile Include="Parallel\ParallelProxy.cs" />
     <Compile Include="Intelligence\SimpleBrain.cs" />
-    <Compile Include="Simulator\Ball.cs" />
+    <Compile Include="Simulator\Balls\Ball.cs" />
     <Compile Include="Simulator\CollisionDetector.cs" />
     <Compile Include="Intelligence\IBrain.cs" />
     <Compile Include="Settings.cs">
@@ -170,11 +180,12 @@
     </Compile>
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Views\IRenderer.cs" />
     <Compile Include="Views\OxyPlotView.cs">
       <SubType>Component</SubType>
     </Compile>
-    <EmbeddedResource Include="Views\BallDisplay.resx">
-      <DependentUpon>BallDisplay.cs</DependentUpon>
+    <EmbeddedResource Include="Views\EnvironmentDisplay.resx">
+      <DependentUpon>EnvironmentDisplay.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Settings.resx">
       <DependentUpon>Settings.cs</DependentUpon>
@@ -204,7 +215,6 @@
       <DependentUpon>Settings.settings</DependentUpon>
       <DesignTimeSharedInput>True</DesignTimeSharedInput>
     </Compile>
-    <Compile Include="Simulator\BoxArena.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\conv-net-sharp\src\ConvNetSharp.Core\ConvNetSharp.Core.csproj">

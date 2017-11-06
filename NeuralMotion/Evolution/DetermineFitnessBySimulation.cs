@@ -14,11 +14,11 @@ namespace NeuralMotion.Evolution
     {
         public BallFitness BestBall { get; set; }
 
-        private readonly BoxArena simulator;
+        private readonly BallArena simulator;
         private readonly List<PointF> positions;
         private readonly RandomEx random;
 
-        public DetermineFitnessBySimulation(BoxArena simulator)
+        public DetermineFitnessBySimulation(BallArena simulator)
         {
             this.simulator = simulator;
             this.positions = new List<PointF>();
@@ -42,7 +42,10 @@ namespace NeuralMotion.Evolution
 
         public double Evaluate(double[] genes)
         {
-            this.simulator.Run().Wait();
+            //var session = new Session(
+            //    simulator
+            //    )
+            //this.simulator.Run().Wait();
 
             this.BestBall = new BallFitness(fitness: double.MinValue);
             var calculated = this

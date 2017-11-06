@@ -1,6 +1,6 @@
 ﻿namespace NeuralMotion.Views
 {
-    partial class BallDisplay
+    partial class EnvironmentDisplay
     {
         /// <summary> 
         /// Required designer variable.
