@@ -118,11 +118,8 @@
     <Compile Include="Simulator\Session.cs" />
     <Compile Include="Simulator\IIndicator.cs" />
     <Compile Include="Simulator\Line.cs" />
-    <Compile Include="Simulator\BoxSpace.cs" />
-    <Compile Include="Simulator\DiscreteSpace.cs" />
     <Compile Include="Simulator\MountainCar\MountainCar.cs" />
     <Compile Include="Simulator\PointD.cs" />
-    <Compile Include="Simulator\Space.cs" />
     <Compile Include="Simulator\Balls\BallArenaRenderer.cs" />
     <Compile Include="Views\EnvironmentDisplay.cs">
       <SubType>UserControl</SubType>
@@ -181,9 +178,8 @@
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Views\IRenderer.cs" />
-    <Compile Include="Views\OxyPlotView.cs">
-      <SubType>Component</SubType>
-    </Compile>
+    <Compile Include="Views\NetExtentions.cs" />
+    <Compile Include="Views\Plot.cs" />
     <Compile Include="Views\PlotWindow.cs">
       <SubType>Form</SubType>
     </Compile>

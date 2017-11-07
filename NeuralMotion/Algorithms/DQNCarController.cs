@@ -39,7 +39,7 @@ namespace NeuralMotion
                 LearningRate = 0.1,
                 L1Decay = 0.0,
                 ClampErrorTo = double.MaxValue,
-                Epsilon = 0.1,
+                Epsilon = 0,
                 Gamma = 0.9,
                 ReplaysPerIteration = 100,
                 ReplayMemorySize = 10000,

@@ -33,23 +33,13 @@ namespace NeuralMotion.Views
         {
             this.components = new System.ComponentModel.Container();
             this.refreshTimer = new System.Windows.Forms.Timer(this.components);
-            this.flowPanel = new System.Windows.Forms.FlowLayoutPanel();
             this.SuspendLayout();
-            // 
-            // flowPanel
-            // 
-            this.flowPanel.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.flowPanel.Location = new System.Drawing.Point(0, 0);
-            this.flowPanel.Name = "flowPanel";
-            this.flowPanel.Size = new System.Drawing.Size(426, 386);
-            this.flowPanel.TabIndex = 1;
             // 
             // PlotWindow
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 16F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(426, 386);
-            this.Controls.Add(this.flowPanel);
             this.Name = "PlotWindow";
             this.Text = "Plot";
             this.ResumeLayout(false);
@@ -59,6 +49,5 @@ namespace NeuralMotion.Views
         #endregion
 
         private System.Windows.Forms.Timer refreshTimer;
-        private System.Windows.Forms.FlowLayoutPanel flowPanel;
     }
 }

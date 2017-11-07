@@ -97,10 +97,10 @@
             this.uiDecreaseLearningRate.Text = "Dec LR";
             this.uiDecreaseLearningRate.UseVisualStyleBackColor = true;
             // 
-            // uiExplorationOnOff
+            // uiToggleExploration
             // 
             this.uiToggleExploration.Location = new System.Drawing.Point(98, 166);
-            this.uiToggleExploration.Name = "uiExplorationOnOff";
+            this.uiToggleExploration.Name = "uiToggleExploration";
             this.uiToggleExploration.Size = new System.Drawing.Size(156, 30);
             this.uiToggleExploration.TabIndex = 8;
             this.uiToggleExploration.Text = "Exploration == On";
@@ -111,7 +111,7 @@
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 16F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(266, 241);
+            this.ClientSize = new System.Drawing.Size(284, 239);
             this.Controls.Add(this.uiToggleExploration);
             this.Controls.Add(this.uiDecreaseLearningRate);
             this.Controls.Add(this.uiIncreaseLearningRate);
@@ -119,9 +119,11 @@
             this.Controls.Add(this.uiDontShowSim);
             this.Controls.Add(this.uiWriteLog);
             this.Controls.Add(this.uiToggleSpeed);
-            this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedToolWindow;
+            this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedSingle;
             this.Location = new System.Drawing.Point(550, 50);
             this.Margin = new System.Windows.Forms.Padding(4);
+            this.MaximizeBox = false;
+            this.MinimizeBox = false;
             this.Name = "Settings";
             this.StartPosition = System.Windows.Forms.FormStartPosition.Manual;
             this.Text = "Settings";

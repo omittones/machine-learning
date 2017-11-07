@@ -33,43 +33,9 @@ namespace NeuralMotion.Test
             //RunStochastic(rnd);
         }
 
-        private static void ShowSet()
+        private static Task PlotNet(Net<double> net)
         {
-            var vol = build.SameAs(1, 1, 2, 1000);
-            vol.MapInplace(v => rnd.NextDouble());
-            var classes = getClasses(vol);
-
-            var plotModel = new PlotModel
-            {
-                Axes =
-                {
-                    new LinearColorAxis
-                    {
-                         Palette = new OxyPalette(OxyColor.FromRgb(255, 0, 0), OxyColor.FromRgb(0, 0, 255))
-                    }
-                },
-                PlotType = PlotType.XY,
-                Series =
-                {
-                    new ScatterSeries
-                    {
-                         MarkerType = MarkerType.Circle,
-                    }
-                }
-            };
-
-            var series = plotModel.Series[0] as ScatterSeries;
-            for (var b = 0; b < vol.BatchSize; b++)
-                series.Points.Add(new ScatterPoint(vol.Get(0, 0, 0, b), vol.Get(0, 0, 1, b), size: 2, value: classes[b]));
-
-            PlotWindow
-                .Show(() => new PlotWindow(plotModel))
-                .Wait();
-        }
-
-        private static Task PlotNet(Net<double> net, bool showClasses = false)
-        {
-            return PlotWindow.Show(() => new PlotWindow(net) { ShowClasses = showClasses });
+            return Plot.Show(() => PlotWindow.Scatterplot(net));
         }
 
         private static void RunPolicyGradients(Random rnd)

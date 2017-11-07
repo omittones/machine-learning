@@ -1,12 +1,11 @@
 //http://incompleteideas.net/sutton/MountainCar/MountainCar1.cp
 //permalink: https://perma.cc/6Z2N-PFWC
 
-using gym;
-using NeuralMotion.Simulator;
-using NeuralMotion.Views;
 using System;
 using System.Drawing;
 using System.Linq;
+using NeuralMotion.Simulator;
+using NeuralMotion.Views;
 
 public class MountainCar : IRenderer, IEnvironment
 {
@@ -24,15 +23,10 @@ public class MountainCar : IRenderer, IEnvironment
     public bool Done { get; private set; }
     public int Action { get; set; }
         
-    protected Space<int> action_space = null;
-    protected Space<(double x, double y)> observation_space = null;
-    
     public MountainCar()
     {
         var low = (x: MinPosition, y: -MaxSpeed);
         var high = (x: MaxPosition, y: MaxSpeed);
-        this.action_space = Space.Discrete(3);
-        this.observation_space = Space.Box(low, high);
 
         this.Reset();
     }
@@ -55,7 +49,7 @@ public class MountainCar : IRenderer, IEnvironment
 
     public void Step()
     {
-        if (!this.action_space.contains(Action))
+        if (Action < 0 || Action > 2)
             throw new Exception("action invalid");
 
         var position = this.CarPosition;

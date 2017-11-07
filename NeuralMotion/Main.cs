@@ -47,11 +47,12 @@ namespace NeuralMotion
             this.uiSettings.RealTime = this.Session.RealTime;
             this.uiDisplay.Renderer = env;
 
-            this.uiRewards = new PlotWindow(ctrl.Net,
+            this.uiRewards = PlotWindow.Scatterplot(
+                ctrl.Net,
                 MountainCar.MinPosition, MountainCar.MaxPosition,
                 -MountainCar.MaxSpeed, MountainCar.MaxSpeed,
                 "position", "speed");
-            
+
             refreshTimer.Interval = 1000 / 60;
             infoTimer.Interval = 1000;
             infoTimer.Tick += ShowInfo;
@@ -77,7 +78,7 @@ namespace NeuralMotion
                     this.Close();
             };
 
-            uiRewards.Show(this);
+            uiRewards.Show();
 
             ConsoleWindow.Show();
 
