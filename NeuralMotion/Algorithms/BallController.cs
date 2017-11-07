@@ -6,7 +6,7 @@ using System.Diagnostics;
 
 namespace NeuralMotion
 {
-    public abstract class BallController : IController
+    public abstract class BallController : IController<BallArena>
     {
         public int InputLength => 30;
         public double[] SelectInput(Ball[] arena, Ball actor)
@@ -87,8 +87,6 @@ namespace NeuralMotion
             }
         }
 
-        public abstract void Control(Ball[] arena, Ball actor);
-
         public virtual double GetReward(Ball[] arena, Ball actor)
         {
             double reward;
@@ -102,5 +100,21 @@ namespace NeuralMotion
 
             return reward;
         }
+
+        private float lastTime = -1;
+        public void Control(BallArena environment)
+        {
+            var now = environment.CurrentSimulationTime;
+            if (this.lastTime > now || now - lastTime >= 0.1)
+            {
+                lastTime = now;
+                foreach (var ball in environment.EngineBalls)
+                    ControlBall(environment.EngineBalls, ball);
+            }
+
+            environment.Step();
+        }
+
+        public abstract void ControlBall(Ball[] arena, Ball actor);
     }
 }

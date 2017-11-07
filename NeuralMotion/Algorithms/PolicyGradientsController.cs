@@ -42,7 +42,7 @@ namespace NeuralMotion
             };
         }
 
-        public override void Control(Ball[] arena, Ball actor)
+        public override void ControlBall(Ball[] arena, Ball actor)
         {
             var inputs = SelectInput(arena, actor);
 

@@ -6,6 +6,7 @@ using NeuralMotion.Simulator;
 using Util;
 using NeuralMotion.Intelligence;
 using NeuralMotion.Views;
+using ConvNetSharp.Core.Training;
 
 namespace NeuralMotion
 {
@@ -18,31 +19,32 @@ namespace NeuralMotion
 
         public Session Session { get; private set; }
         public IEnvironment Environment { get; private set; }
-        public IController Controller { get; private set; }
+        public object Controller { get; private set; }
         public IRenderer Renderer { get; private set; }
 
         public Main()
         {
+            var env = new MountainCar();
+            var ctrl = new DQNCarController();
+
             //this.Controller = new PolicyGradientsController(500, 5);
             //this.Controller = new DQNController();
             //this.Environment = new BallArena(Controller, 10, 0.06f);
             //this.Renderer = new BallArenaRenderer(this.Environment);
 
-            var mc = new MountainCar();
-            this.Environment = mc;
+            this.Environment = env;
+            this.Controller = ctrl;
 
-            this.Session = new Session(this.Controller, this.Environment)
-            {
-                LimitSimulationDuration = 100,
-                RestartOnEnd = true,
-                RealTime = true
-            };
+            this.Session = Session.Create(env, ctrl);
+            this.Session.LimitSimulationDuration = 100;
+            this.Session.RestartOnEnd = true;
+            this.Session.RealTime = true;
 
             InitializeComponent();
 
             this.uiSettings = new Settings();
-            this.uiSettings.RealTime = true;
-            this.uiDisplay.Renderer = mc;
+            this.uiSettings.RealTime = this.Session.RealTime;
+            this.uiDisplay.Renderer = env;
 
             refreshTimer.Interval = 1000 / 60;
             infoTimer.Interval = 1000;
@@ -83,6 +85,7 @@ namespace NeuralMotion
             if (this.simulation.Status == TaskStatus.Running)
             {
                 string rewardRange;
+                DQNTrainer trainer;
                 switch (Controller)
                 {
                     case PolicyGradientsController pg:
@@ -90,8 +93,8 @@ namespace NeuralMotion
                         Console.WriteLine($"{pg.Samples:0000}  REWARDS: {rewardRange}");
                         this.uiFitnessPlot.AddPoint(pg.Samples, 0, pg.Rewards.Mean);
                         break;
-                    case DQNController dqn:
-                        var trainer = dqn.Trainer;
+                    case DQNBallController dqn:
+                        trainer = dqn.Trainer;
                         rewardRange = $"{dqn.Rewards.Min:0.000} ... {dqn.Rewards.Mean:0.000} ... {dqn.Rewards.Max:0.000}";
                         Console.WriteLine($"{trainer.Samples:0000}   LOSS: {dqn.Loss.Mean:0.00000000}   REWARDS: {rewardRange}");
                         if (uiSettings.ShowBallStatus)
@@ -102,6 +105,19 @@ namespace NeuralMotion
                         }
                         this.uiFitnessPlot.AddPoint(trainer.Samples, dqn.Loss.Mean, dqn.Rewards.Mean);
                         break;
+                    case DQNCarController dqn:
+                        trainer = dqn.Trainer;
+                        rewardRange = $"{dqn.Rewards.Min:0.000} ... {dqn.Rewards.Mean:0.000} ... {dqn.Rewards.Max:0.000}";
+                        Console.WriteLine($"{trainer.Samples:0000}   LOSS: {dqn.Loss.Mean:0.00000000}   REWARDS: {rewardRange}");
+                        if (uiSettings.ShowBallStatus)
+                        {
+                            Console.WriteLine($"   - Replay count: {trainer.ReplayMemoryCount}");
+                            Console.WriteLine($"   - QValue mean: {dqn.QValues.Mean:0.000} / {dqn.QValues.StandardDeviation:0.000}");
+                            Console.WriteLine($"   - QValue range: {dqn.QValues.Min:0.000} ... {dqn.QValues.Max:0.000}");
+                        }
+                        this.uiFitnessPlot.AddPoint(trainer.Samples, dqn.Loss.Mean, dqn.Rewards.Mean);
+                        break;
+
                     default:
                         break;
                 }
@@ -121,15 +137,13 @@ namespace NeuralMotion
 
         private void OnRefreshTimer(object sender, EventArgs e)
         {
-            if (!this.uiSettings.DontShowSim)
-            {
-                this.Session.RealTime = uiSettings.RealTime;
-                //this.Renderer.ShowKicks = uiSettings.ShowBallStatus;
-                //this.Renderer.ShowPosition = uiSettings.ShowBallStatus;
-                //this.Renderer.ShowSpeed = uiSettings.ShowBallStatus;
+            this.Session.RealTime = uiSettings.RealTime;
+            //this.Renderer.ShowKicks = uiSettings.ShowBallStatus;
+            //this.Renderer.ShowPosition = uiSettings.ShowBallStatus;
+            //this.Renderer.ShowSpeed = uiSettings.ShowBallStatus;
 
+            if (!this.uiSettings.DontShowSim)
                 this.uiDisplay.Refresh();
-            }
         }
     }
 }

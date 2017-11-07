@@ -20,8 +20,9 @@ public class MountainCar : IRenderer, IEnvironment
     public float CurrentSimulationTime { get; private set; }
     public double CarPosition { get; private set; }
     public double CarVelocity { get; private set; }
+    public double Reward { get; private set; }
+    public int Action { get; set; }
     
-    int action;
     protected Space<int> action_space = null;
     protected Space<(double x, double y)> observation_space = null;
     
@@ -53,35 +54,29 @@ public class MountainCar : IRenderer, IEnvironment
 
     public void Step()
     {
-        this.Step(2);
-    }
-
-    public double Step(int action)
-    {
-        if (!this.action_space.contains(action))
+        if (!this.action_space.contains(Action))
             throw new Exception("action invalid");
 
         var position = this.CarPosition;
         var velocity = this.CarVelocity;
 
-        velocity += (action - 1) * 0.001 + Math.Cos(3 * position) * (-0.0025);
+        velocity += (this.Action - 1) * 0.001 + Math.Cos(3 * position) * (-0.0025);
         velocity = Clip(velocity, -MaxSpeed, MaxSpeed);
         position += velocity;
         position = Clip(position, MinPosition, MaxPosition);
         if (position == MinPosition && velocity < 0)
             velocity = 0;
 
-        var reward = -1.0;
+        this.Reward = -1.0;
         if (position >= GoalPosition)
-            reward = 1.0;
+        {
+            this.Reward = 1.0;
+            velocity = 0;
+        }
 
         this.CurrentSimulationTime += 0.02f;
-
         this.CarPosition = position;
         this.CarVelocity = velocity;
-        this.action = action;
-
-        return reward;
     }
 
     public void Reset()
@@ -134,7 +129,7 @@ public class MountainCar : IRenderer, IEnvironment
         (var l, var r, var t, var b) = (-carWidth / 2, carWidth / 2, carHeight, 0);
         var car = new[] { new PointD(l, b), new PointD(l, t), new PointD(r, t), new PointD(r, b) }.ToPointF();
         graphics.FillPolygon(Brushes.LightGray, car);
-        if (this.action == 0)
+        if (this.Action == 0)
             graphics.DrawString("<", fontText, Brushes.Black, l - 0.05f, b);
         else
             graphics.DrawString(">", fontText, Brushes.Black, r, b);

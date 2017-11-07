@@ -23,10 +23,10 @@ namespace NeuralMotion.Simulator
         }
 
         private readonly CollisionDetector collisionDetector;
-        private readonly IController controller;
+        private readonly IController<BallArena> controller;
 
         public BallArena(
-            IController controller,
+            IController<BallArena> controller,
             int noBalls = 5,
             float ballRadius = 0.06f)
         {
@@ -107,8 +107,8 @@ namespace NeuralMotion.Simulator
                 this.CurrentSimulationTime - lastTime >= 0.1)
             {
                 lastTime = this.CurrentSimulationTime;
-                foreach (var ball in this.EngineBalls)
-                    this.controller.Control(this.EngineBalls, ball);
+
+                this.controller.Control(this);
             }
         }
 

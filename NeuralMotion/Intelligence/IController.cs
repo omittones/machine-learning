@@ -2,8 +2,8 @@
 
 namespace NeuralMotion.Intelligence
 {
-    public interface IController
+    public interface IController<TEnvironment>
     {
-        void Control(Ball[] arena, Ball actor);
+        void Control(TEnvironment environment);
     }
 }

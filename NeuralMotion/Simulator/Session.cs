@@ -6,25 +6,27 @@ using NeuralMotion.Intelligence;
 
 namespace NeuralMotion.Simulator
 {
-    public class Session
+    public abstract class Session
     {
+        public static Session Create<TEnvironment>(TEnvironment environment, IController<TEnvironment> controller)
+            where TEnvironment : IEnvironment
+        {
+            return new Session<TEnvironment>(environment, controller);
+        }
+
         public float? LimitSimulationDuration { get; set; }
         public bool RealTime { set; get; }
         public bool RestartOnEnd { set; get; }
 
-        private readonly IController controller;
         private readonly IEnvironment environment;
         private CancellationTokenSource token;
         private Task task;
 
-        public Session(
-            IController controller,
-            IEnvironment environment)
+        public Session(IEnvironment environment)
         {
             this.LimitSimulationDuration = 10;
             this.RealTime = true;
             this.RestartOnEnd = false;
-            this.controller = controller;
             this.environment = environment;
         }
 
@@ -76,6 +78,8 @@ namespace NeuralMotion.Simulator
                 throw new NotSupportedException("Environment did not properly reset!");
         }
 
+        protected abstract void Control();
+
         private void Loop(CancellationToken token)
         {
             try
@@ -91,8 +95,8 @@ namespace NeuralMotion.Simulator
                         var localStart = DateTime.UtcNow;
                         var simStart = this.environment.CurrentSimulationTime;
 
-                        this.environment.Step();
-
+                        this.Control();
+                        
                         if (this.RealTime)
                         {
                             var localDuration = DateTime.UtcNow.Subtract(localStart).TotalSeconds;
@@ -110,6 +114,26 @@ namespace NeuralMotion.Simulator
                 Console.WriteLine(ex.Message);
                 throw;
             }
+        }
+    }
+
+    public class Session<TEnvironment> : Session
+        where TEnvironment : IEnvironment
+    {
+        private readonly TEnvironment environment;
+        private readonly IController<TEnvironment> controller;
+
+        public Session(
+            TEnvironment environment,
+            IController<TEnvironment> controller) : base(environment)
+        {
+            this.environment = environment;
+            this.controller = controller;
+        }
+
+        protected override void Control()
+        {
+            this.controller.Control(this.environment);
         }
     }
 }
