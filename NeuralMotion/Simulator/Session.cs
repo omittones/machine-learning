@@ -74,7 +74,7 @@ namespace NeuralMotion.Simulator
         {
             this.environment.Reset();
 
-            if (this.environment.CurrentSimulationTime != 0)
+            if (this.environment.SimTime != 0)
                 throw new NotSupportedException("Environment did not properly reset!");
         }
 
@@ -87,23 +87,26 @@ namespace NeuralMotion.Simulator
                 while (this.RestartOnEnd)
                 {
                     while (!this.LimitSimulationDuration.HasValue ||
-                            this.environment.CurrentSimulationTime < this.LimitSimulationDuration)
+                            this.environment.SimTime < this.LimitSimulationDuration)
                     {
                         if (token.IsCancellationRequested)
                             return;
 
                         var localStart = DateTime.UtcNow;
-                        var simStart = this.environment.CurrentSimulationTime;
+                        var simStart = this.environment.SimTime;
 
                         this.Control();
-                        
+
                         if (this.RealTime)
                         {
                             var localDuration = DateTime.UtcNow.Subtract(localStart).TotalSeconds;
-                            var simDuration = this.environment.CurrentSimulationTime - simStart;
+                            var simDuration = this.environment.SimTime - simStart;
                             if (simDuration > localDuration)
                                 Thread.Sleep((int)((simDuration - localDuration) * 1000));
                         }
+
+                        if (this.environment.Done)
+                            break;
                     }
 
                     Initialize();

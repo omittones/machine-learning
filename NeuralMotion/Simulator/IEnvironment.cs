@@ -2,7 +2,9 @@
 {
     public interface IEnvironment
     {
-        float CurrentSimulationTime { get; }
+        float SimTime { get; }
+
+        bool Done { get; }
 
         void Reset();
 

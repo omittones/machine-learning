@@ -61,7 +61,7 @@ namespace NeuralMotion.Simulator
             var radius = arena.BallRadius * 2;
             var halfRadius = arena.BallRadius;
 
-            var time = $"{this.arena.CurrentSimulationTime} {(ShowPreviewFlag ? "PREVIEW" : "")}";
+            var time = $"{this.arena.SimTime} {(ShowPreviewFlag ? "PREVIEW" : "")}";
             g.DrawString(time, this.fontText, penBall.Brush, new PointF(-0.9f, -0.9f));
 
             var point = new PointF(0, 0);
@@ -76,7 +76,7 @@ namespace NeuralMotion.Simulator
 
                 g.DrawLine(penIndicators, point, point.Offset(ball.Acceleration));
 
-                if (arena.CurrentSimulationTime - ball.LastCollisionTime < 0.1)
+                if (arena.SimTime - ball.LastCollisionTime < 0.1)
                     g.DrawEllipse(penCollision, point.X - halfRadius, point.Y - halfRadius, radius, radius);
                 else
                     g.DrawEllipse(penBall, point.X - halfRadius, point.Y - halfRadius, radius, radius);

@@ -12,9 +12,9 @@ namespace NeuralMotion
         public MovingStatistics Loss { get; }
         public MovingStatistics QValues { get; }
         public MovingStatistics Rewards { get; }
+        public Net<double> Net { get; }
 
         private readonly double[] input;
-        private readonly Net<double> net;
         private readonly Dictionary<long, Action> pendingAction = null;
 
         public DQNCarController()
@@ -25,42 +25,62 @@ namespace NeuralMotion
             this.Rewards = new MovingStatistics(1000);
 
             this.input = new double[2];
-            this.net = new Net<double>();
-            this.net.AddLayer(new InputLayer(1, 1, 2));
-            this.net.AddLayer(new FullyConnLayer(50));
-            this.net.AddLayer(new LeakyReluLayer());
-            this.net.AddLayer(new FullyConnLayer(50));
-            this.net.AddLayer(new LeakyReluLayer());
-            this.net.AddLayer(new FullyConnLayer(3));
-            this.net.AddLayer(new RegressionLayer());
+            this.Net = new Net<double>();
+            this.Net.AddLayer(new InputLayer(1, 1, 2));
+            this.Net.AddLayer(new FullyConnLayer(50));
+            this.Net.AddLayer(new LeakyReluLayer());
+            this.Net.AddLayer(new FullyConnLayer(50));
+            this.Net.AddLayer(new LeakyReluLayer());
+            this.Net.AddLayer(new FullyConnLayer(3));
+            this.Net.AddLayer(new RegressionLayer());
 
-            this.Trainer = new DQNTrainer(net, 3)
+            this.Trainer = new DQNTrainer(Net, 3)
             {
                 LearningRate = 0.1,
-                L1Decay = 0.01,
-                ClampErrorTo = 1,
+                L1Decay = 0.0,
+                ClampErrorTo = double.MaxValue,
                 Epsilon = 0.1,
-                Gamma = 0.5,
-                ReplaysPerIteration = 10,
-                ReplayMemorySize = 100,
+                Gamma = 0.9,
+                ReplaysPerIteration = 100,
+                ReplayMemorySize = 10000,
                 ReplayMemoryDiscardStrategy = ExperienceDiscardStrategy.First,
                 ReplaySkipCount = 0
             };
         }
 
+        private double last = 0;
         public void Control(MountainCar environment)
         {
-            input[0] = environment.CarPosition;
-            input[1] = environment.CarVelocity;
+            if (environment.SimTime - last > 1.0 ||
+                environment.SimTime < last)
+            {
+                last = environment.SimTime;
 
-            var action = this.Trainer.Act(input);
+                lock (this.Net)
+                {
+                    input[0] = environment.CarPosition;
+                    input[1] = environment.CarVelocity;
 
-            environment.Action = action.Decision;
-            environment.Step();
+                    var action = this.Trainer.Act(input);
 
-            this.Trainer.Learn(action,
-                new[] { environment.CarPosition, environment.CarVelocity },
-                environment.Reward);
+                    environment.Action = action.Decision;
+
+                    environment.Step();
+
+                    this.Trainer.Learn(
+                        action,
+                        new[] { environment.CarPosition, environment.CarVelocity },
+                        environment.Reward);
+
+                    this.QValues.Push(this.Trainer.QValue);
+                    this.Rewards.Push(environment.Reward);
+                    this.Loss.Push(this.Trainer.Loss);
+                }
+            }
+            else
+            {
+                environment.Step();
+            }
         }
     }
 }

@@ -104,7 +104,7 @@ namespace NeuralMotion
         private float lastTime = -1;
         public void Control(BallArena environment)
         {
-            var now = environment.CurrentSimulationTime;
+            var now = environment.SimTime;
             if (this.lastTime > now || now - lastTime >= 0.1)
             {
                 lastTime = now;

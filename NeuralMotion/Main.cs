@@ -16,6 +16,7 @@ namespace NeuralMotion
         private readonly Settings uiSettings;
         private bool closing;
         private Task simulation;
+        private readonly PlotWindow uiRewards;
 
         public Session Session { get; private set; }
         public IEnvironment Environment { get; private set; }
@@ -36,7 +37,7 @@ namespace NeuralMotion
             this.Controller = ctrl;
 
             this.Session = Session.Create(env, ctrl);
-            this.Session.LimitSimulationDuration = 100;
+            this.Session.LimitSimulationDuration = 10;
             this.Session.RestartOnEnd = true;
             this.Session.RealTime = true;
 
@@ -46,6 +47,11 @@ namespace NeuralMotion
             this.uiSettings.RealTime = this.Session.RealTime;
             this.uiDisplay.Renderer = env;
 
+            this.uiRewards = new PlotWindow(ctrl.Net,
+                MountainCar.MinPosition, MountainCar.MaxPosition,
+                -MountainCar.MaxSpeed, MountainCar.MaxSpeed,
+                "position", "speed");
+            
             refreshTimer.Interval = 1000 / 60;
             infoTimer.Interval = 1000;
             infoTimer.Tick += ShowInfo;
@@ -70,6 +76,8 @@ namespace NeuralMotion
                 if (!this.closing)
                     this.Close();
             };
+
+            uiRewards.Show(this);
 
             ConsoleWindow.Show();
 
@@ -107,7 +115,7 @@ namespace NeuralMotion
                         break;
                     case DQNCarController dqn:
                         trainer = dqn.Trainer;
-                        rewardRange = $"{dqn.Rewards.Min:0.000} ... {dqn.Rewards.Mean:0.000} ... {dqn.Rewards.Max:0.000}";
+                        rewardRange = $"{dqn.Rewards.Min:0.000000} ... {dqn.Rewards.Mean:0.000000} ... {dqn.Rewards.Max:0.000000}";
                         Console.WriteLine($"{trainer.Samples:0000}   LOSS: {dqn.Loss.Mean:0.00000000}   REWARDS: {rewardRange}");
                         if (uiSettings.ShowBallStatus)
                         {

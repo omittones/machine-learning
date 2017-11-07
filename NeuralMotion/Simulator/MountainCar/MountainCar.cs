@@ -17,12 +17,13 @@ public class MountainCar : IRenderer, IEnvironment
     public const double MaxSpeed = 0.07;
     public const double GoalPosition = 0.5;
 
-    public float CurrentSimulationTime { get; private set; }
+    public float SimTime { get; private set; }
     public double CarPosition { get; private set; }
     public double CarVelocity { get; private set; }
     public double Reward { get; private set; }
+    public bool Done { get; private set; }
     public int Action { get; set; }
-    
+        
     protected Space<int> action_space = null;
     protected Space<(double x, double y)> observation_space = null;
     
@@ -59,22 +60,31 @@ public class MountainCar : IRenderer, IEnvironment
 
         var position = this.CarPosition;
         var velocity = this.CarVelocity;
-
-        velocity += (this.Action - 1) * 0.001 + Math.Cos(3 * position) * (-0.0025);
-        velocity = Clip(velocity, -MaxSpeed, MaxSpeed);
-        position += velocity;
-        position = Clip(position, MinPosition, MaxPosition);
-        if (position == MinPosition && velocity < 0)
-            velocity = 0;
-
-        this.Reward = -1.0;
         if (position >= GoalPosition)
         {
+            this.Done = true;
             this.Reward = 1.0;
             velocity = 0;
         }
+        else
+        {
+            this.Done = false;
+            this.Reward = 0.0;
+            velocity += (this.Action - 1) * 0.001 + Math.Cos(3 * position) * (-0.0025);
+            velocity = Clip(velocity, -MaxSpeed, MaxSpeed);
+        }
 
-        this.CurrentSimulationTime += 0.02f;
+        //var dist = GoalPosition - position;
+        //this.Reward = 1.0 / (dist * dist + 0.000001);
+
+        position += velocity;
+        if (position < MinPosition || position > MaxPosition)
+        {
+            position = Clip(position, MinPosition, MaxPosition);
+            velocity = -velocity * 0.1f;
+        }
+
+        this.SimTime += 0.02f;
         this.CarPosition = position;
         this.CarVelocity = velocity;
     }
@@ -83,7 +93,7 @@ public class MountainCar : IRenderer, IEnvironment
     {
         this.CarPosition = this.np_random.NextDouble() * 0.2 - 0.6;
         this.CarVelocity = 0;
-        this.CurrentSimulationTime = 0;
+        this.SimTime = 0;
     }
 
     public double height(double xs)
@@ -100,7 +110,7 @@ public class MountainCar : IRenderer, IEnvironment
         graphics.DrawRectangle(blackPen, -1, -1, 2, 1.99f);
         
         var fontText = new Font(FontFamily.GenericSansSerif, 0.05f, FontStyle.Regular, GraphicsUnit.Point);
-        graphics.DrawString(this.CurrentSimulationTime.ToString("0.0"), fontText, Brushes.Black, -0.8f, -0.8f);
+        graphics.DrawString(this.SimTime.ToString("0.0"), fontText, Brushes.Black, -0.8f, -0.8f);
 
         var scale = 2.1f / (float)(MaxPosition - MinPosition);
         graphics.ScaleTransform(scale, -scale);
@@ -131,7 +141,7 @@ public class MountainCar : IRenderer, IEnvironment
         graphics.FillPolygon(Brushes.LightGray, car);
         if (this.Action == 0)
             graphics.DrawString("<", fontText, Brushes.Black, l - 0.05f, b);
-        else
+        else if (this.Action == 2)
             graphics.DrawString(">", fontText, Brushes.Black, r, b);
 
         var circle = carHeight / 2.5f;

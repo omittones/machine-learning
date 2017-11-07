@@ -14,7 +14,8 @@ namespace NeuralMotion.Simulator
         public Ball[] EngineBalls { get; private set; }
         public float TimeStep { get; private set; }
         public float BallRadius { get; private set; }
-        public float CurrentSimulationTime { get; private set; }
+        public float SimTime { get; private set; }
+        public bool Done => false;
         public int TotalCollisions { get; private set; }
 
         public float MaximumBallSpeed
@@ -86,7 +87,7 @@ namespace NeuralMotion.Simulator
 
                 EngineBalls[index].StartingPosition = EngineBalls[index].Position;
             }
-            this.CurrentSimulationTime = 0;
+            this.SimTime = 0;
         }
 
         private float lastTime = -1;
@@ -98,15 +99,15 @@ namespace NeuralMotion.Simulator
 
             DecisionLoop();
 
-            this.CurrentSimulationTime += this.TimeStep;
+            this.SimTime += this.TimeStep;
         }
 
         private void DecisionLoop()
         {
-            if (this.lastTime > this.CurrentSimulationTime ||
-                this.CurrentSimulationTime - lastTime >= 0.1)
+            if (this.lastTime > this.SimTime ||
+                this.SimTime - lastTime >= 0.1)
             {
-                lastTime = this.CurrentSimulationTime;
+                lastTime = this.SimTime;
 
                 this.controller.Control(this);
             }
@@ -114,7 +115,7 @@ namespace NeuralMotion.Simulator
 
         private void PhysicsLoop()
         {
-            var detections = this.collisionDetector.Detect(this.EngineBalls, this.CurrentSimulationTime);
+            var detections = this.collisionDetector.Detect(this.EngineBalls, this.SimTime);
             this.TotalCollisions += detections;
 
             //pokreni svaku loptu

@@ -5,6 +5,7 @@ using OxyPlot;
 using OxyPlot.Axes;
 using OxyPlot.Series;
 using System;
+using System.Drawing;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -18,69 +19,61 @@ namespace NeuralMotion.Views
 
         private Net<double> net;
         private Volume<double> input;
-        private PlotModel plotModel;
 
-        public void RefreshSeries(object sender, EventArgs args)
+        private (Volume<double>, Volume<double>) ForwardNet(PointD min, PointD max, int resolution)
         {
-            var hms = plotModel.Series[0] as HeatMapSeries;
-            int resolution = 50;
+            var spanX = (max.X - min.X) / resolution;
+            var spanY = (max.Y - min.Y) / resolution;
+
             int count = 0;
-            if (hms.Data.Length == 0)
-            {
-                hms.Data = new double[resolution, resolution];
-                input = BuilderInstance<double>.Volume.SameAs(Shape.From(1, 1, 2, resolution * resolution));
-                count = 0;
-                for (var y = 0; y < resolution; y += 1)
-                    for (var x = 0; x < resolution; x += 1)
-                    {
-                        input.Set(0, 0, 0, count, x / (double)resolution);
-                        input.Set(0, 0, 1, count, y / (double)resolution);
-                        count++;
-                    }
-            }
+            input = BuilderInstance<double>.Volume.SameAs(Shape.From(1, 1, 2, resolution * resolution));
+            for (var y = min.Y; y <= max.Y; y += spanY)
+                for (var x = min.X; x <= max.X; x += spanX)
+                {
+                    if (count == input.BatchSize)
+                        break;
+
+                    input.Set(0, 0, 0, count, x);
+                    input.Set(0, 0, 1, count, y);
+                    count++;
+                }
 
             lock (net)
             {
-                var isReg = net.Layers.Last() is RegressionLayer<double>;
+                return (input, net.Forward(input));
+            }
+        }
 
+        private void DrawHeatmaps(int resolution, Volume<double> output)
+        {
+            int count;
+            for (var i = 0; i < output.Depth; i++)
+            {
                 count = 0;
-                var output = net.Forward(input);
                 for (var y = 0; y < resolution; y += 1)
                     for (var x = 0; x < resolution; x += 1)
                     {
-                        var isa = output.Get(0, 0, 0, count);
-                        var isb = output.Get(0, 0, 1, count);
-                        if (ShowClasses)
-                        {
-                            hms.Data[x, y] = isa > isb ? -1 : 1;
-                        }
-                        else
-                        {
-                            if (isReg)
-                                hms.Data[x, y] = isa - isb;
-                            else
-                                hms.Data[x, y] = isa;
-                        }
-
-                        //var sum = isa + isb;
-                        //sum = isa / sum;
-                        //hms.Data[x, y] = isb;
-
+                        var view = flowPanel.Controls[i] as OxyPlotView;
+                        var hms = view.Model.Series[0] as HeatMapSeries;
+                        if (hms.Data.Length == 0)
+                            hms.Data = new double[resolution, resolution];
+                        hms.Data[x, y] = output.Get(0, 0, i, count);
+                        view.InvalidatePlot(true);
                         count++;
                     }
             }
+        }
 
-            plotView.InvalidatePlot(true);
+        private void DrawClasses(ScatterSeries series, Volume<double> input, Volume<double> output)
+        {
+
         }
 
         protected override void OnShown(EventArgs e)
         {
             base.OnShown(e);
-            
-            this.plotView.Model = plotModel;
-            this.plotView.Controller = null;
 
-            this.refreshTimer.Interval = 100;
+            this.refreshTimer.Interval = 2000;
             this.refreshTimer.Enabled = true;
         }
 
@@ -102,45 +95,154 @@ namespace NeuralMotion.Views
             return task;
         }
 
-        public PlotWindow(PlotModel model)
+        private void AddPlot(PlotModel model)
         {
-            InitializeComponent();
-
-            this.plotModel = model;
-            this.refreshTimer.Enabled = false;
+            var plotView = new OxyPlotView()
+            {
+                Size = new Size(500, 400)
+            };
+            plotView.Model = model;
+            this.flowPanel.Controls.Add(plotView);
         }
 
-        public PlotWindow(Net<double> net)
+        public static void OutputHeatmaps(
+            Net<double> net,
+            double minX, double maxX, double minY, double maxY,
+            string xTitle = "X",
+            string yTitle = "Y")
         {
-            InitializeComponent();
-
-            this.net = net;
-            this.plotModel = new PlotModel()
+            PlotWindow.Show(() =>
             {
-                Axes =
+                var window = new PlotWindow();
+                window.InitializeComponent();
+                window.net = net;
+                var channels = window.net.Layers.Last().OutputDepth;
+                window.flowPanel.SuspendLayout();
+                for (var i = 0; i < channels; i++)
                 {
-                    new LinearColorAxis
+                    var model = new PlotModel()
                     {
-                         Palette = ShowClasses ? OxyPalettes.Cool(2) : OxyPalettes.Jet(100)
-                    }
-                },
-                PlotType = PlotType.XY,
-                Series =
-                {
-                    new HeatMapSeries
-                    {
-                        RenderMethod = HeatMapRenderMethod.Bitmap,
-                        Selectable = false,
-                        X0 = 0,
-                        X1 = 1,
-                        Y0 = 0,
-                        Y1 = 1,
-                        Data = new double[,]{ },
-                        Interpolate = false,
-                    }
+                        Axes =
+                        {
+                            new LinearColorAxis
+                            {
+                                Palette = OxyPalettes.Jet(100),
+                                Position = AxisPosition.Right,
+                                Minimum = -1,
+                                Maximum = 2
+                            },
+                            new LinearAxis
+                            {
+                                 Title = xTitle,
+                                 Position = AxisPosition.Bottom,
+                                 Key = "x"
+                            },
+                            new LinearAxis
+                            {
+                                Title = yTitle,
+                                Position = AxisPosition.Left,
+                                Key = "y"
+                            }
+                        },
+                        PlotType = PlotType.XY,
+                        Series =
+                        {
+                            new HeatMapSeries
+                            {
+                                RenderMethod = HeatMapRenderMethod.Bitmap,
+                                Selectable = false,
+                                X0 = minX,
+                                X1 = maxX,
+                                Y0 = minY,
+                                Y1 = maxY,
+                                XAxisKey = "x",
+                                YAxisKey = "y",
+                                Data = new double[,]{ },
+                                Interpolate = false,
+                                Title = $"Action({i})"
+                            }
+                        }
+                    };
+
+                    window.AddPlot(model);
                 }
-            };
-            this.refreshTimer.Tick += this.RefreshSeries;
+                window.flowPanel.ResumeLayout(true);
+
+                window.refreshTimer.Tick += (o, s) =>
+                {
+                    var (input, output) = window.ForwardNet((minX, minY), (maxX, maxY), 50);
+                    window.DrawHeatmaps(50, output);
+                };
+
+                return window;
+            });
+        }
+
+        public static void ClassScatterplot(
+            Net<double> net,
+            double minX, double maxX, double minY, double maxY,
+            string xTitle = "X",
+            string yTitle = "Y")
+        {
+            PlotWindow.Show(() =>
+            {
+                var window = new PlotWindow();
+                window.InitializeComponent();
+                window.net = net;
+                var channels = window.net.Layers.Last().OutputDepth;
+                window.flowPanel.SuspendLayout();
+
+                var series = new ScatterSeries
+                {
+                    Selectable = false,
+                    XAxisKey = "x",
+                    YAxisKey = "y",
+                    ColorAxisKey = "classes",
+                    Title = "Classes",
+                };
+
+                var model = new PlotModel()
+                {
+                    Axes =
+                    {
+                        new CategoryColorAxis
+                        {
+                            Key = "classes",
+                            ActualLabels =
+                            {
+                            }
+                        },
+                        new LinearAxis
+                        {
+                                Title = xTitle,
+                                Position = AxisPosition.Bottom,
+                                Key = "x"
+                        },
+                        new LinearAxis
+                        {
+                            Title = yTitle,
+                            Position = AxisPosition.Left,
+                            Key = "y"
+                        }
+                    },
+                    PlotType = PlotType.XY,
+                    Series =
+                    {
+                        series
+                    }
+                };
+
+                window.AddPlot(model);
+                window.flowPanel.ResumeLayout(true);
+
+                window.refreshTimer.Tick += (o, s) =>
+                {
+                    var (input, output) = window.ForwardNet((minX, minY), (maxX, maxY), 50);
+                    window.DrawClasses(series, input, output);
+                };
+
+                return window;
+            });
         }
     }
 }
