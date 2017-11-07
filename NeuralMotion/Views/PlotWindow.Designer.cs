@@ -1,6 +1,6 @@
 ﻿using OxyPlot.WindowsForms;
 
-namespace NeuralMotion.Test
+namespace NeuralMotion.Views
 {
     partial class PlotWindow
     {
@@ -43,21 +43,21 @@ namespace NeuralMotion.Test
             this.plotView.Location = new System.Drawing.Point(0, 0);
             this.plotView.Name = "plotView";
             this.plotView.PanCursor = System.Windows.Forms.Cursors.Hand;
-            this.plotView.Size = new System.Drawing.Size(431, 373);
+            this.plotView.Size = new System.Drawing.Size(426, 386);
             this.plotView.TabIndex = 0;
             this.plotView.Text = "Plot";
             this.plotView.ZoomHorizontalCursor = System.Windows.Forms.Cursors.SizeWE;
             this.plotView.ZoomRectangleCursor = System.Windows.Forms.Cursors.SizeNWSE;
             this.plotView.ZoomVerticalCursor = System.Windows.Forms.Cursors.SizeNS;
             // 
-            // Main
+            // PlotWindow
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 16F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(431, 373);
+            this.ClientSize = new System.Drawing.Size(426, 386);
             this.Controls.Add(this.plotView);
-            this.Name = "Main";
-            this.Text = "Main";
+            this.Name = "PlotWindow";
+            this.Text = "Plot";
             this.ResumeLayout(false);
 
         }

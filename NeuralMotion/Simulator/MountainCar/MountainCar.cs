@@ -12,25 +12,23 @@ public class MountainCar : IRenderer, IEnvironment
 {
     private Random np_random = new Random();
 
-    private double min_position;
-    private double max_position;
-    private double max_speed;
-    private double goal_position;
-    double[] state;
-    protected Space<int> action_space = null;
-    protected Space<(double x, double y)> observation_space = null;
+    public const double MinPosition = -1.2;
+    public const double MaxPosition = 0.7;
+    public const double MaxSpeed = 0.07;
+    public const double GoalPosition = 0.5;
 
     public float CurrentSimulationTime { get; private set; }
-
+    public double CarPosition { get; private set; }
+    public double CarVelocity { get; private set; }
+    
+    int action;
+    protected Space<int> action_space = null;
+    protected Space<(double x, double y)> observation_space = null;
+    
     public MountainCar()
     {
-        this.min_position = -1.2;
-        this.max_position = 0.7;
-        this.max_speed = 0.07;
-        this.goal_position = 0.5;
-
-        var low = (x: this.min_position, y: -this.max_speed);
-        var high = (x: this.max_position, y: this.max_speed);
+        var low = (x: MinPosition, y: -MaxSpeed);
+        var high = (x: MaxPosition, y: MaxSpeed);
         this.action_space = Space.Discrete(3);
         this.observation_space = Space.Box(low, high);
 
@@ -55,43 +53,41 @@ public class MountainCar : IRenderer, IEnvironment
 
     public void Step()
     {
-        this.Step(1);
+        this.Step(2);
     }
 
-    public StepReturnType Step(int action)
+    public double Step(int action)
     {
         if (!this.action_space.contains(action))
             throw new Exception("action invalid");
 
-        var position = this.state[0];
-        var velocity = this.state[1];
+        var position = this.CarPosition;
+        var velocity = this.CarVelocity;
 
-        velocity += (action * 2 - 1) * 0.001 + Math.Cos(3 * position) * (-0.0025);
-        velocity = Clip(velocity, -this.max_speed, this.max_speed);
+        velocity += (action - 1) * 0.001 + Math.Cos(3 * position) * (-0.0025);
+        velocity = Clip(velocity, -MaxSpeed, MaxSpeed);
         position += velocity;
-        position = Clip(position, this.min_position, this.max_position);
-        if (position == this.min_position && velocity < 0)
+        position = Clip(position, MinPosition, MaxPosition);
+        if (position == MinPosition && velocity < 0)
             velocity = 0;
 
-        var done = position >= this.goal_position;
         var reward = -1.0;
+        if (position >= GoalPosition)
+            reward = 1.0;
 
-        this.CurrentSimulationTime += 0.1f;
+        this.CurrentSimulationTime += 0.02f;
 
-        this.state = new[] { position, velocity };
-        
-        return new StepReturnType
-        {
-            reward = reward,
-            done = done,
-            info = new { },
-            observation = this.state
-        };
+        this.CarPosition = position;
+        this.CarVelocity = velocity;
+        this.action = action;
+
+        return reward;
     }
 
     public void Reset()
     {
-        this.state = new[] { this.np_random.NextDouble() * 0.2 - 0.6, 0 };
+        this.CarPosition = this.np_random.NextDouble() * 0.2 - 0.6;
+        this.CarVelocity = 0;
         this.CurrentSimulationTime = 0;
     }
 
@@ -111,21 +107,21 @@ public class MountainCar : IRenderer, IEnvironment
         var fontText = new Font(FontFamily.GenericSansSerif, 0.05f, FontStyle.Regular, GraphicsUnit.Point);
         graphics.DrawString(this.CurrentSimulationTime.ToString("0.0"), fontText, Brushes.Black, -0.8f, -0.8f);
 
-        var scale = 2.1f / (float)(max_position - min_position);
+        var scale = 2.1f / (float)(MaxPosition - MinPosition);
         graphics.ScaleTransform(scale, -scale);
         graphics.TranslateTransform(0.3f, -0.8f);
         var tscreen = graphics.Transform;
 
         blackPen.Width = 0.008f;
-        var from = new PointD(min_position, height(min_position));
-        for (var pos = min_position; pos < max_position; pos += 0.1)
+        var from = new PointD(MinPosition, height(MinPosition));
+        for (var pos = MinPosition; pos < MaxPosition; pos += 0.1)
         {
             var to = new PointD(pos, height(pos));
             graphics.DrawLine(blackPen, from, to);
             from = to;
         }
 
-        var position = (float)this.state[0];
+        var position = (float)this.CarPosition;
 
         var carWidth = 0.18f;
         var carHeight = 0.09f;
@@ -138,6 +134,10 @@ public class MountainCar : IRenderer, IEnvironment
         (var l, var r, var t, var b) = (-carWidth / 2, carWidth / 2, carHeight, 0);
         var car = new[] { new PointD(l, b), new PointD(l, t), new PointD(r, t), new PointD(r, b) }.ToPointF();
         graphics.FillPolygon(Brushes.LightGray, car);
+        if (this.action == 0)
+            graphics.DrawString("<", fontText, Brushes.Black, l - 0.05f, b);
+        else
+            graphics.DrawString(">", fontText, Brushes.Black, r, b);
 
         var circle = carHeight / 2.5f;
         graphics.TranslateTransform(carWidth / 4, 0);
@@ -148,8 +148,8 @@ public class MountainCar : IRenderer, IEnvironment
         graphics.FillEllipse(Brushes.DarkGray, -circle, -circle, 2 * circle, 2 * circle);
 
         graphics.Transform = tscreen;
-        var flagx = (float)this.goal_position;
-        var flagy1 = (float)this.height(this.goal_position);
+        var flagx = (float)GoalPosition;
+        var flagy1 = (float)this.height(GoalPosition);
         var flagy2 = flagy1 + 0.1f;
         graphics.DrawLine(blackPen, flagx, flagy1, flagx, flagy2);
         graphics.FillPolygon(

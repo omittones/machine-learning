@@ -33,7 +33,7 @@ namespace NeuralMotion
 
             this.Session = new Session(this.Controller, this.Environment)
             {
-                LimitSimulationDuration = 500,
+                LimitSimulationDuration = 100,
                 RestartOnEnd = true,
                 RealTime = true
             };

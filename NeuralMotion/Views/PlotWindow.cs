@@ -10,7 +10,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
-namespace NeuralMotion.Test
+namespace NeuralMotion.Views
 {
     public partial class PlotWindow : Form
     {

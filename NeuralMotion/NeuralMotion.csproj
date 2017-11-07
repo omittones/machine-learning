@@ -102,16 +102,16 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="BallController.cs" />
-    <Compile Include="DQNController.cs" />
+    <Compile Include="Algorithms\BallController.cs" />
+    <Compile Include="Algorithms\DQNController.cs" />
     <Compile Include="Evolution\CrossEntropyMethod.cs" />
     <Compile Include="Intelligence\AForgeBrain.cs" />
     <Compile Include="Intelligence\ConvNetBrain.cs" />
     <Compile Include="Intelligence\IController.cs" />
-    <Compile Include="MovingStatistics.cs" />
-    <Compile Include="Path.cs" />
-    <Compile Include="PolicyGradientsController.cs" />
-    <Compile Include="RolloutCollection.cs" />
+    <Compile Include="Algorithms\MovingStatistics.cs" />
+    <Compile Include="Algorithms\Path.cs" />
+    <Compile Include="Algorithms\PolicyGradientsController.cs" />
+    <Compile Include="Algorithms\RolloutCollection.cs" />
     <Compile Include="Simulator\Balls\BallArena.cs" />
     <Compile Include="Simulator\IEnvironment.cs" />
     <Compile Include="Simulator\Session.cs" />
@@ -122,7 +122,6 @@
     <Compile Include="Simulator\MountainCar\MountainCar.cs" />
     <Compile Include="Simulator\PointD.cs" />
     <Compile Include="Simulator\Space.cs" />
-    <Compile Include="Simulator\MountainCar\StepReturnType.cs" />
     <Compile Include="Simulator\Balls\BallArenaRenderer.cs" />
     <Compile Include="Views\EnvironmentDisplay.cs">
       <SubType>UserControl</SubType>
@@ -184,6 +183,12 @@
     <Compile Include="Views\OxyPlotView.cs">
       <SubType>Component</SubType>
     </Compile>
+    <Compile Include="Views\PlotWindow.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Views\PlotWindow.Designer.cs">
+      <DependentUpon>PlotWindow.cs</DependentUpon>
+    </Compile>
     <EmbeddedResource Include="Views\EnvironmentDisplay.resx">
       <DependentUpon>EnvironmentDisplay.cs</DependentUpon>
     </EmbeddedResource>
@@ -205,6 +210,9 @@
       <DependentUpon>Resources.resx</DependentUpon>
       <DesignTime>True</DesignTime>
     </Compile>
+    <EmbeddedResource Include="Views\PlotWindow.resx">
+      <DependentUpon>PlotWindow.cs</DependentUpon>
+    </EmbeddedResource>
     <None Include="packages.config" />
     <None Include="Properties\Settings.settings">
       <Generator>SettingsSingleFileGenerator</Generator>

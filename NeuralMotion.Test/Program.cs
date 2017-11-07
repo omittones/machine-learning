@@ -15,6 +15,7 @@ using System.Collections.Generic;
 using OxyPlot;
 using OxyPlot.Axes;
 using OxyPlot.Series;
+using NeuralMotion.Views;
 
 namespace NeuralMotion.Test
 {
