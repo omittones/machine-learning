@@ -17,27 +17,32 @@ namespace NeuralMotion
         private Task simulation;
 
         public Session Session { get; private set; }
-        public BallArena Environment { get; private set; }
+        public IEnvironment Environment { get; private set; }
         public IController Controller { get; private set; }
-        public BallArenaRenderer Renderer { get; private set; }
+        public IRenderer Renderer { get; private set; }
 
         public Main()
         {
             //this.Controller = new PolicyGradientsController(500, 5);
-            this.Controller = new DQNController();
-            this.Environment = new BallArena(Controller, 10, 0.06f);
-            this.Renderer = new BallArenaRenderer(this.Environment);
+            //this.Controller = new DQNController();
+            //this.Environment = new BallArena(Controller, 10, 0.06f);
+            //this.Renderer = new BallArenaRenderer(this.Environment);
+
+            var mc = new MountainCar();
+            this.Environment = mc;
+
             this.Session = new Session(this.Controller, this.Environment)
             {
                 LimitSimulationDuration = 500,
                 RestartOnEnd = true,
-                RealTime = false
+                RealTime = true
             };
 
             InitializeComponent();
 
             this.uiSettings = new Settings();
-            this.uiDisplay.Renderer = new BallArenaRenderer(this.Environment);
+            this.uiSettings.RealTime = true;
+            this.uiDisplay.Renderer = mc;
 
             refreshTimer.Interval = 1000 / 60;
             infoTimer.Interval = 1000;
@@ -119,9 +124,9 @@ namespace NeuralMotion
             if (!this.uiSettings.DontShowSim)
             {
                 this.Session.RealTime = uiSettings.RealTime;
-                this.Renderer.ShowKicks = uiSettings.ShowBallStatus;
-                this.Renderer.ShowPosition = uiSettings.ShowBallStatus;
-                this.Renderer.ShowSpeed = uiSettings.ShowBallStatus;
+                //this.Renderer.ShowKicks = uiSettings.ShowBallStatus;
+                //this.Renderer.ShowPosition = uiSettings.ShowBallStatus;
+                //this.Renderer.ShowSpeed = uiSettings.ShowBallStatus;
 
                 this.uiDisplay.Refresh();
             }

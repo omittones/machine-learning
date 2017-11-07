@@ -2,12 +2,13 @@
 //permalink: https://perma.cc/6Z2N-PFWC
 
 using gym;
+using NeuralMotion.Simulator;
 using NeuralMotion.Views;
 using System;
 using System.Drawing;
 using System.Linq;
 
-public class MountainCar : IRenderer
+public class MountainCar : IRenderer, IEnvironment
 {
     private Random np_random = new Random();
 
@@ -19,10 +20,12 @@ public class MountainCar : IRenderer
     protected Space<int> action_space = null;
     protected Space<(double x, double y)> observation_space = null;
 
+    public float CurrentSimulationTime { get; private set; }
+
     public MountainCar()
     {
         this.min_position = -1.2;
-        this.max_position = 0.6;
+        this.max_position = 0.7;
         this.max_speed = 0.07;
         this.goal_position = 0.5;
 
@@ -50,6 +53,11 @@ public class MountainCar : IRenderer
         return value;
     }
 
+    public void Step()
+    {
+        this.Step(1);
+    }
+
     public StepReturnType Step(int action)
     {
         if (!this.action_space.contains(action))
@@ -68,8 +76,10 @@ public class MountainCar : IRenderer
         var done = position >= this.goal_position;
         var reward = -1.0;
 
-        this.state = new[] { position, velocity };
+        this.CurrentSimulationTime += 0.1f;
 
+        this.state = new[] { position, velocity };
+        
         return new StepReturnType
         {
             reward = reward,
@@ -79,10 +89,10 @@ public class MountainCar : IRenderer
         };
     }
 
-    public object Reset()
+    public void Reset()
     {
         this.state = new[] { this.np_random.NextDouble() * 0.2 - 0.6, 0 };
-        return state;
+        this.CurrentSimulationTime = 0;
     }
 
     public double height(double xs)
@@ -92,49 +102,62 @@ public class MountainCar : IRenderer
 
     public void Render(Graphics graphics)
     {
+        var blackPen = Pens.Black.Clone() as Pen;
+
         graphics.Clear(Color.White);
+        blackPen.Width = 0.005f;
+        graphics.DrawRectangle(blackPen, -1, -1, 2, 1.99f);
+        
+        var fontText = new Font(FontFamily.GenericSansSerif, 0.05f, FontStyle.Regular, GraphicsUnit.Point);
+        graphics.DrawString(this.CurrentSimulationTime.ToString("0.0"), fontText, Brushes.Black, -0.8f, -0.8f);
+
+        var scale = 2.1f / (float)(max_position - min_position);
+        graphics.ScaleTransform(scale, -scale);
+        graphics.TranslateTransform(0.3f, -0.8f);
+        var tscreen = graphics.Transform;
+
+        blackPen.Width = 0.008f;
         var from = new PointD(min_position, height(min_position));
-        for (var x = min_position; x < max_position; x += 0.1)
+        for (var pos = min_position; pos < max_position; pos += 0.1)
         {
-            var to = new PointD(x, height(x));
-            graphics.DrawLine(Pens.Black, from, to);
+            var to = new PointD(pos, height(pos));
+            graphics.DrawLine(blackPen, from, to);
             from = to;
         }
 
-        var position = this.state[0];
-        var carwidth = 0.4f;
-        var carheight = 0.2f;
-        var clearance = 0.1f;
-        (var l, var r, var t, var b) = (-carwidth / 2, carwidth / 2, carheight, 0);
+        var position = (float)this.state[0];
 
-        var car = new[] { new PointD(l, b), new PointD(l, t), new PointD(r, t), new PointD(r, b) }.ToPointF();
-
-        var tscreen = graphics.Transform;
-        graphics.RotateTransform((float)Math.Cos(3 * position));
+        var carWidth = 0.18f;
+        var carHeight = 0.09f;
+        var clearance = 0.04f;
+        graphics.TranslateTransform(position, (float)height(position));
+        graphics.RotateTransform((float)(Math.Cos(3 * position) * 60));
+        graphics.TranslateTransform(0, clearance);
         var tcar = graphics.Transform;
 
-        graphics.TranslateTransform(0, clearance);
+        (var l, var r, var t, var b) = (-carWidth / 2, carWidth / 2, carHeight, 0);
+        var car = new[] { new PointD(l, b), new PointD(l, t), new PointD(r, t), new PointD(r, b) }.ToPointF();
         graphics.FillPolygon(Brushes.LightGray, car);
 
-        var circle = carheight / 2.5f;
-        graphics.TranslateTransform(carwidth / 4, clearance);
-        graphics.FillEllipse(Brushes.DarkGray, circle, circle, 2 * circle, 2 * circle);
+        var circle = carHeight / 2.5f;
+        graphics.TranslateTransform(carWidth / 4, 0);
+        graphics.FillEllipse(Brushes.DarkGray, -circle, -circle, 2 * circle, 2 * circle);
         graphics.Transform = tcar;
 
-        graphics.TranslateTransform(-carwidth / 4, clearance);
-        graphics.FillEllipse(Brushes.DarkGray, circle, circle, 2 * circle, 2 * circle);
+        graphics.TranslateTransform(-carWidth / 4, 0);
+        graphics.FillEllipse(Brushes.DarkGray, -circle, -circle, 2 * circle, 2 * circle);
 
         graphics.Transform = tscreen;
-        var flagx = (float)(this.goal_position - this.min_position);
+        var flagx = (float)this.goal_position;
         var flagy1 = (float)this.height(this.goal_position);
-        var flagy2 = flagy1 + 0.2f;
-        graphics.DrawLine(Pens.Black, flagx, flagy1, flagx, flagy2);
+        var flagy2 = flagy1 + 0.1f;
+        graphics.DrawLine(blackPen, flagx, flagy1, flagx, flagy2);
         graphics.FillPolygon(
-            Brushes.Gray,
+            Brushes.Yellow,
             new[] {
                 (flagx, flagy2).ToPoint(),
-                (flagx, flagy2 - 10).ToPoint(),
-                (flagx + 25, flagy2 - 5).ToPoint()
+                (flagx, flagy2 - 0.05f).ToPoint(),
+                (flagx + 0.07f, flagy2 - 0.025f).ToPoint()
                 });
-    }
+    }    
 }

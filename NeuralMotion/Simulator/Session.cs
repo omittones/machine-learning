@@ -76,9 +76,6 @@ namespace NeuralMotion.Simulator
                 throw new NotSupportedException("Environment did not properly reset!");
         }
 
-        private float lastTime = -1;
-        private PointF[] prevAccels;
-
         private void Loop(CancellationToken token)
         {
             try
@@ -91,15 +88,17 @@ namespace NeuralMotion.Simulator
                         if (token.IsCancellationRequested)
                             return;
 
-                        var start = DateTime.UtcNow;
+                        var localStart = DateTime.UtcNow;
+                        var simStart = this.environment.CurrentSimulationTime;
 
                         this.environment.Step();
 
                         if (this.RealTime)
                         {
-                            var duration = DateTime.UtcNow.Subtract(start).TotalSeconds;
-                            if (duration > 0)
-                                Thread.Sleep((int)(duration * 1000));
+                            var localDuration = DateTime.UtcNow.Subtract(localStart).TotalSeconds;
+                            var simDuration = this.environment.CurrentSimulationTime - simStart;
+                            if (simDuration > localDuration)
+                                Thread.Sleep((int)((simDuration - localDuration) * 1000));
                         }
                     }
 
