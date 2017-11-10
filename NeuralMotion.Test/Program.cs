@@ -35,7 +35,7 @@ namespace NeuralMotion.Test
 
         private static Task PlotNet(Net<double> net)
         {
-            return Plot.Show(() => PlotWindow.Scatterplot(net));
+            return Plot.Show(() => PlotWindow.ClassHeatmap(net));
         }
 
         private static void RunPolicyGradients(Random rnd)
@@ -200,7 +200,7 @@ namespace NeuralMotion.Test
 
                         var predictedAction = qLearner.Act(inputs.ToArray());
 
-                        var reward = expectedActions[0] == predictedAction.Decision ? 1.0 : -1.0;
+                        var reward = expectedActions[0] == predictedAction.Action ? 1.0 : -1.0;
 
                         qLearner.Learn(predictedAction, inputs.ToArray(), reward);
                     }

@@ -15,11 +15,11 @@ namespace NeuralMotion
         public MovingStatistics Rewards { get; }
 
         private readonly Net<double> net;
-        private readonly Dictionary<long, Action> pendingAction = null;
+        private readonly Dictionary<long, Decision> pendingAction = null;
 
         public DQNBallController()
         {
-            this.pendingAction = new Dictionary<long, Action>();
+            this.pendingAction = new Dictionary<long, Decision>();
             this.Loss = new MovingStatistics(1000);
             this.QValues = new MovingStatistics(1000);
             this.Rewards = new MovingStatistics(1000);
@@ -69,12 +69,12 @@ namespace NeuralMotion
                 action = Trainer.Act(inputs);
                 pendingAction[actor.Id] = action;
 
-                HandleOutput(actor, action.Decision);
+                HandleOutput(actor, action.Action);
             }
             else
             {
                 var action = Trainer.Act(inputs);
-                HandleOutput(actor, action.Decision);
+                HandleOutput(actor, action.Action);
             }
         }
     }

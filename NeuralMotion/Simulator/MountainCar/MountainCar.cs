@@ -9,7 +9,7 @@ using NeuralMotion.Views;
 
 public class MountainCar : IRenderer, IEnvironment
 {
-    private Random np_random = new Random();
+    private Random rnd = new Random();
 
     public const double MinPosition = -1.2;
     public const double MaxPosition = 0.7;
@@ -22,19 +22,18 @@ public class MountainCar : IRenderer, IEnvironment
     public double Reward { get; private set; }
     public bool Done { get; private set; }
     public int Action { get; set; }
-        
+    public bool Strict { get; set; }
+
     public MountainCar()
     {
-        var low = (x: MinPosition, y: -MaxSpeed);
-        var high = (x: MaxPosition, y: MaxSpeed);
-
+        this.Strict = true;
         this.Reset();
     }
 
     public long[] Seed(int? seed = null)
     {
         var s = seed.GetValueOrDefault();
-        this.np_random = new Random(s);
+        this.rnd = new Random(s);
         return new long[] { s };
     }
 
@@ -58,18 +57,19 @@ public class MountainCar : IRenderer, IEnvironment
         {
             this.Done = true;
             this.Reward = 1.0;
-            velocity = 0;
         }
         else
         {
-            this.Done = false;
             this.Reward = 0.0;
             velocity += (this.Action - 1) * 0.001 + Math.Cos(3 * position) * (-0.0025);
             velocity = Clip(velocity, -MaxSpeed, MaxSpeed);
         }
 
-        //var dist = GoalPosition - position;
-        //this.Reward = 1.0 / (dist * dist + 0.000001);
+        if (!Strict)
+        {
+            var dist = GoalPosition - position;
+            this.Reward = 1.0 / (dist * dist * 100 + 1);
+        }
 
         position += velocity;
         if (position < MinPosition || position > MaxPosition)
@@ -85,9 +85,10 @@ public class MountainCar : IRenderer, IEnvironment
 
     public void Reset()
     {
-        this.CarPosition = this.np_random.NextDouble() * 0.2 - 0.6;
+        this.CarPosition = this.rnd.NextDouble() * 0.2 - 0.6;
         this.CarVelocity = 0;
         this.SimTime = 0;
+        this.Done = false;
     }
 
     public double height(double xs)
@@ -103,8 +104,10 @@ public class MountainCar : IRenderer, IEnvironment
         blackPen.Width = 0.005f;
         graphics.DrawRectangle(blackPen, -1, -1, 2, 1.99f);
         
-        var fontText = new Font(FontFamily.GenericSansSerif, 0.05f, FontStyle.Regular, GraphicsUnit.Point);
-        graphics.DrawString(this.SimTime.ToString("0.0"), fontText, Brushes.Black, -0.8f, -0.8f);
+        var bigText = new Font(FontFamily.GenericSansSerif, 0.05f, FontStyle.Regular, GraphicsUnit.Point);
+        var smallText = new Font(FontFamily.GenericSansSerif, 0.03f, FontStyle.Regular, GraphicsUnit.Point);
+
+        graphics.DrawString(this.SimTime.ToString("0.0"), bigText, Brushes.Black, -0.8f, -0.8f);
 
         var scale = 2.1f / (float)(MaxPosition - MinPosition);
         graphics.ScaleTransform(scale, -scale);
@@ -134,9 +137,9 @@ public class MountainCar : IRenderer, IEnvironment
         var car = new[] { new PointD(l, b), new PointD(l, t), new PointD(r, t), new PointD(r, b) }.ToPointF();
         graphics.FillPolygon(Brushes.LightGray, car);
         if (this.Action == 0)
-            graphics.DrawString("<", fontText, Brushes.Black, l - 0.05f, b);
+            graphics.DrawString("<", bigText, Brushes.Black, l - 0.05f, b);
         else if (this.Action == 2)
-            graphics.DrawString(">", fontText, Brushes.Black, r, b);
+            graphics.DrawString(">", bigText, Brushes.Black, r, b);
 
         var circle = carHeight / 2.5f;
         graphics.TranslateTransform(carWidth / 4, 0);
@@ -145,6 +148,12 @@ public class MountainCar : IRenderer, IEnvironment
 
         graphics.TranslateTransform(-carWidth / 4, 0);
         graphics.FillEllipse(Brushes.DarkGray, -circle, -circle, 2 * circle, 2 * circle);
+
+        graphics.Transform = tscreen;
+        graphics.TranslateTransform(-0.05f, 0.1f);
+        graphics.ScaleTransform(1f, -1f);
+        for (var x = MinPosition; x < MaxPosition; x += 0.2)
+            graphics.DrawString(x.ToString("0.00"), smallText, Brushes.Black, (float)x, 0);
 
         graphics.Transform = tscreen;
         var flagx = (float)GoalPosition;

@@ -31,7 +31,7 @@
             this.uiToggleSpeed = new System.Windows.Forms.Button();
             this.uiWriteLog = new System.Windows.Forms.CheckBox();
             this.uiDontShowSim = new System.Windows.Forms.CheckBox();
-            this.uiShowBallStatusText = new System.Windows.Forms.CheckBox();
+            this.uiShowDiagnostics = new System.Windows.Forms.CheckBox();
             this.uiIncreaseLearningRate = new System.Windows.Forms.Button();
             this.uiDecreaseLearningRate = new System.Windows.Forms.Button();
             this.uiToggleExploration = new System.Windows.Forms.Button();
@@ -69,15 +69,15 @@
             this.uiDontShowSim.Text = "Don\'t show sim";
             this.uiDontShowSim.UseVisualStyleBackColor = true;
             // 
-            // uiShowBallStatusText
+            // uiShowDiagnostics
             // 
-            this.uiShowBallStatusText.AutoSize = true;
-            this.uiShowBallStatusText.Location = new System.Drawing.Point(18, 98);
-            this.uiShowBallStatusText.Name = "uiShowBallStatusText";
-            this.uiShowBallStatusText.Size = new System.Drawing.Size(132, 21);
-            this.uiShowBallStatusText.TabIndex = 5;
-            this.uiShowBallStatusText.Text = "Show ball status";
-            this.uiShowBallStatusText.UseVisualStyleBackColor = true;
+            this.uiShowDiagnostics.AutoSize = true;
+            this.uiShowDiagnostics.Location = new System.Drawing.Point(18, 98);
+            this.uiShowDiagnostics.Name = "uiShowDiagnostics";
+            this.uiShowDiagnostics.Size = new System.Drawing.Size(139, 21);
+            this.uiShowDiagnostics.TabIndex = 5;
+            this.uiShowDiagnostics.Text = "Show diagnostics";
+            this.uiShowDiagnostics.UseVisualStyleBackColor = true;
             // 
             // uiIncreaseLearningRate
             // 
@@ -115,7 +115,7 @@
             this.Controls.Add(this.uiToggleExploration);
             this.Controls.Add(this.uiDecreaseLearningRate);
             this.Controls.Add(this.uiIncreaseLearningRate);
-            this.Controls.Add(this.uiShowBallStatusText);
+            this.Controls.Add(this.uiShowDiagnostics);
             this.Controls.Add(this.uiDontShowSim);
             this.Controls.Add(this.uiWriteLog);
             this.Controls.Add(this.uiToggleSpeed);
@@ -137,7 +137,7 @@
         private System.Windows.Forms.Button uiToggleSpeed;
         private System.Windows.Forms.CheckBox uiWriteLog;
         private System.Windows.Forms.CheckBox uiDontShowSim;
-        private System.Windows.Forms.CheckBox uiShowBallStatusText;
+        private System.Windows.Forms.CheckBox uiShowDiagnostics;
         private System.Windows.Forms.Button uiIncreaseLearningRate;
         private System.Windows.Forms.Button uiDecreaseLearningRate;
         private System.Windows.Forms.Button uiToggleExploration;

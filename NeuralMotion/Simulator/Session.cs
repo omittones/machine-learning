@@ -78,7 +78,7 @@ namespace NeuralMotion.Simulator
                 throw new NotSupportedException("Environment did not properly reset!");
         }
 
-        protected abstract void Control();
+        protected abstract bool Step();
 
         private void Loop(CancellationToken token)
         {
@@ -95,7 +95,7 @@ namespace NeuralMotion.Simulator
                         var localStart = DateTime.UtcNow;
                         var simStart = this.environment.SimTime;
 
-                        this.Control();
+                        var done = this.Step();
 
                         if (this.RealTime)
                         {
@@ -105,8 +105,7 @@ namespace NeuralMotion.Simulator
                                 Thread.Sleep((int)((simDuration - localDuration) * 1000));
                         }
 
-                        if (this.environment.Done)
-                            break;
+                        if (done) break;
                     }
 
                     Initialize();
@@ -134,9 +133,11 @@ namespace NeuralMotion.Simulator
             this.controller = controller;
         }
 
-        protected override void Control()
+        protected override bool Step()
         {
             this.controller.Control(this.environment);
+
+            return this.controller.Done;
         }
     }
 }

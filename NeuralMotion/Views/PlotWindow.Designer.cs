@@ -32,7 +32,8 @@ namespace NeuralMotion.Views
         private void InitializeComponent()
         {
             this.components = new System.ComponentModel.Container();
-            this.refreshTimer = new System.Windows.Forms.Timer(this.components);
+            this.slowTimer = new System.Windows.Forms.Timer(this.components);
+            this.fastTimer = new System.Windows.Forms.Timer(this.components);
             this.SuspendLayout();
             // 
             // PlotWindow
@@ -48,6 +49,7 @@ namespace NeuralMotion.Views
 
         #endregion
 
-        private System.Windows.Forms.Timer refreshTimer;
+        private System.Windows.Forms.Timer slowTimer;
+        private System.Windows.Forms.Timer fastTimer;
     }
 }

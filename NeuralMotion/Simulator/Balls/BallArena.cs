@@ -15,7 +15,6 @@ namespace NeuralMotion.Simulator
         public float TimeStep { get; private set; }
         public float BallRadius { get; private set; }
         public float SimTime { get; private set; }
-        public bool Done => false;
         public int TotalCollisions { get; private set; }
 
         public float MaximumBallSpeed

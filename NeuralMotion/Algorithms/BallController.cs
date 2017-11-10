@@ -8,7 +8,10 @@ namespace NeuralMotion
 {
     public abstract class BallController : IController<BallArena>
     {
+        public bool Done => false;
+
         public int InputLength => 30;
+
         public double[] SelectInput(Ball[] arena, Ball actor)
         {
             var neighbours = arena
@@ -59,6 +62,7 @@ namespace NeuralMotion
         }
 
         public int OutputLength => 5;
+        
         public void HandleOutput(Ball ball, int action)
         {
             Debug.Assert(action >= 0 && action < this.OutputLength);

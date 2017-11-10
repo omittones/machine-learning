@@ -7,7 +7,7 @@ namespace NeuralMotion
     {
         public bool WriteStatus => uiWriteLog.Checked;
         public bool DontShowSim => uiDontShowSim.Checked;
-        public bool ShowBallStatus => uiShowBallStatusText.Checked;
+        public bool ShowBallStatus => uiShowDiagnostics.Checked;
         public bool RealTime { get; set; }
         public double Alpha { get; set; }
         public double Epsilon { get; set; }

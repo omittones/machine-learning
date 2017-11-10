@@ -4,8 +4,6 @@
     {
         float SimTime { get; }
 
-        bool Done { get; }
-
         void Reset();
 
         void Step();

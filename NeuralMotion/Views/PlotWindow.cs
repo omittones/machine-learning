@@ -8,73 +8,110 @@ using OxyPlot.WindowsForms;
 using System;
 using System.Drawing;
 using System.Linq;
+using System.Threading;
 using System.Windows.Forms;
 
 namespace NeuralMotion.Views
 {
     public partial class PlotWindow : Form
     {
-        private void DrawHeatmaps(int resolution, Volume<double> output)
+        public bool TrackChanges { get; set; }
+
+        public PlotWindow()
         {
-            int count;
-            for (var i = 0; i < output.Depth; i++)
-            {
-                count = 0;
-                var view = this.Controls[0].Controls[i] as PlotView;
-                var hms = view.Model.Series[0] as HeatMapSeries;
-                if (hms.Data.Length == 0)
-                    hms.Data = new double[resolution, resolution];
-
-                for (var y = 0; y < resolution; y += 1)
-                    for (var x = 0; x < resolution; x += 1)
-                    {
-                        hms.Data[x, y] = output.Get(0, 0, i, count);
-                        count++;
-                    }
-
-                view.InvalidatePlot(true);
-            }
-        }
-
-        private void DrawClasses(ScatterSeries series, Volume<double> input, Volume<double> output)
-        {
-            for (var b = 0; b < input.BatchSize; b++)
-            {
-                var x = input.Get(0, 0, 0, b);
-                var y = input.Get(0, 0, 1, b);
-                var klass = output.IndexOfMax(b);
-                series.Points.Add(new ScatterPoint(x, y, value: klass));
-            }
-
-            series.PlotModel.PlotView.InvalidatePlot(true);
+            TrackChanges = true;
         }
 
         protected override void OnShown(EventArgs e)
         {
             base.OnShown(e);
 
-            this.refreshTimer.Interval = 2000;
-            this.refreshTimer.Enabled = true;
+            this.slowTimer.Interval = 2000;
+            this.slowTimer.Enabled = true;
+            this.fastTimer.Interval = 1000 / 60;
+            this.fastTimer.Enabled = true;
         }
 
-        public static PlotWindow Heatmaps(
+        private void DrawHeatmaps(int resolution, Volume<double> output)
+        {
+            double min = double.MaxValue, max = double.MinValue;
+            int count;
+            for (var channel = 0; channel < output.Depth; channel++)
+            {
+                count = 0;
+                var view = this.Controls[0].Controls[channel] as PlotView;
+                var hms = view.Model.Series[0] as HeatMapSeries;
+                if (hms.Data.Length < resolution * resolution)
+                    hms.Data = new double[resolution, resolution];
+
+                for (var y = 0; y < resolution; y += 1)
+                    for (var x = 0; x < resolution; x += 1)
+                    {
+                        if (count == output.BatchSize)
+                            break;
+                        hms.Data[x, y] = output.Get(0, 0, channel, count);
+                        count++;
+                    }
+
+                //for (var y = 0; y < resolution; y += 1)
+                //    for (var x = 0; x < resolution; x += 1)
+                //        hms.Data[x, y] = 1.0 * x / resolution + 1000.0 * y / resolution;
+                
+                min = Math.Min(min, hms.Data.Min2D());
+                max = Math.Max(max, hms.Data.Max2D());
+            }
+
+            for (var channel = 0; channel < output.Depth; channel++)
+            {
+                var view = this.Controls[0].Controls[channel] as PlotView;
+                var colors = view.Model.Axes.OfType<LinearColorAxis>().First();
+                colors.Minimum = min;
+                colors.Maximum = max;
+                view.InvalidatePlot(true);
+            }
+        }
+
+        private void DrawClasses(int resolution, Volume<double> output)
+        {
+            var view = this.Controls[0] as PlotView;
+            var hms = view.Model.Series.OfType<HeatMapSeries>().First();
+            if (hms.Data.Length < resolution * resolution)
+                hms.Data = new double[resolution, resolution];
+
+            int count = 0;
+            for (var y = 0; y < resolution; y += 1)
+                for (var x = 0; x < resolution; x += 1)
+                {
+                    if (count == output.BatchSize)
+                        break;
+                    hms.Data[x, y] = output.IndexOfMax(count);
+                    count++;
+                }
+
+            hms.Invalidate();
+            view.InvalidatePlot(true);
+        }
+
+        public static PlotWindow ValueHeatmaps(
             Net<double> net,
             double minX = 0,
             double maxX = 1,
             double minY = 0,
             double maxY = 1,
             string xTitle = "X",
-            string yTitle = "Y")
+            string yTitle = "Y",
+            string titles = null)
         {
             var window = new PlotWindow();
             window.InitializeComponent();
             window.SuspendLayout();
-
+            
             var flowPanel = new FlowLayoutPanel();
             window.Controls.Add(flowPanel);
             flowPanel.Dock = DockStyle.Fill;
 
             var channels = net.Layers.Last().OutputDepth;
+            var size = new Size(50, 400);
             for (var i = 0; i < channels; i++)
             {
                 var model = new PlotModel()
@@ -107,16 +144,15 @@ namespace NeuralMotion.Views
                         new HeatMapSeries
                         {
                             RenderMethod = HeatMapRenderMethod.Bitmap,
-                            Selectable = false,
                             X0 = minX,
                             X1 = maxX,
                             Y0 = minY,
                             Y1 = maxY,
                             XAxisKey = "x",
                             YAxisKey = "y",
-                            Data = new double[,]{ },
+                            Data = new double[2,2] { { 0, 0 }, { 0, 0 } },
                             Interpolate = false,
-                            Title = $"Action({i})"
+                            Title = titles != null ? titles.Split(',')[i] :  $"Action({i})"
                         }
                     }
                 };
@@ -127,11 +163,16 @@ namespace NeuralMotion.Views
                 };
                 plotView.Model = model;
                 flowPanel.Controls.Add(plotView);
+                size.Width += plotView.Size.Width;
             }
+            window.Size = size;
             window.ResumeLayout(true);
 
-            window.refreshTimer.Tick += (o, s) =>
+            window.slowTimer.Tick += (o, s) =>
             {
+                if (!window.TrackChanges)
+                    return;
+
                 var (input, output) = net.ForwardArea((minX, minY), (maxX, maxY), 50);
                 window.DrawHeatmaps(50, output);
             };
@@ -139,44 +180,52 @@ namespace NeuralMotion.Views
             return window;
         }
 
-        public static PlotWindow Scatterplot(
+        public static PlotWindow ClassHeatmap(
             Net<double> net,
             double minX = 0,
             double maxX = 1,
             double minY = 0,
             double maxY = 1,
             string xTitle = "X",
-            string yTitle = "Y")
+            string yTitle = "Y",
+            string labels = null,
+            Func<PointF> tracker = null)
         {
             var window = new PlotWindow();
             window.InitializeComponent();
             window.SuspendLayout();
-            var channels = net.Layers.Last().OutputDepth;
 
-            var series = new ScatterSeries
+            var nmClasses = net.Layers.Last().OutputDepth;
+            var categories = new CategoryColorAxis
             {
-                Selectable = false,
-                XAxisKey = "x",
-                YAxisKey = "y",
-                MarkerType = MarkerType.Circle,
-                MarkerStrokeThickness = 0,
-                Background = OxyColor.Parse("#FFFFFF"),
-                MarkerSize = 3,
-                ColorAxisKey = "classes",
-                RenderInLegend = true
+                Palette = OxyPalettes.HueDistinct(nmClasses),
+                Position = AxisPosition.Right,
+                Title = "Classes",
+                Key = "classes",
+                Minimum = 0,
+                Maximum = nmClasses - 1
             };
+
+            if (labels != null)
+            {
+                var names = labels.Split(',');
+                categories.Labels.AddRange(names);
+            }
 
             var model = new PlotModel()
             {
                 Axes =
                 {
+                    categories,
+
                     new LinearColorAxis
                     {
-                        Palette = OxyPalettes.HueDistinct(channels),
-                        Position = AxisPosition.Right,
-                        Title = "Classes",
-                        Key = "classes",
+                         Palette = OxyPalettes.BlackWhiteRed(2),
+                         Minimum = 0,
+                         Maximum = 1,
+                         Key = "circle"
                     },
+
                     new LinearAxis
                     {
                         Title = xTitle,
@@ -197,21 +246,83 @@ namespace NeuralMotion.Views
                 PlotType = PlotType.XY,
                 Series =
                 {
-                    series
+                    new HeatMapSeries
+                    {
+                        Selectable = false,
+                        XAxisKey = "x",
+                        YAxisKey = "y",
+                        X0 = minX,
+                        X1 = maxX,
+                        Y0 = minY,
+                        Y1 = maxY,
+                        ColorAxisKey = "classes",
+                        TrackerKey = "temp",
+                        Interpolate = false,
+                        RenderMethod = HeatMapRenderMethod.Bitmap,
+                        Data = new double[2,2] { { 0, 0 }, { 0, 0 } }
+                    },
+                    new ScatterSeries
+                    {
+                         MarkerType = MarkerType.Circle,
+                         MarkerSize = 3,
+                         XAxisKey = "x",
+                         YAxisKey = "y",
+                         ColorAxisKey = "circle",
+                         Points =
+                         {
+                             new ScatterPoint(0, 0, value:0)
+                         }
+                    }
                 }
             };
-
+        
             var plotView = new PlotView();
             plotView.Dock = DockStyle.Fill;
             plotView.Model = model;
             window.Controls.Add(plotView);
             window.ResumeLayout(true);
 
-            window.refreshTimer.Tick += (o, s) =>
+            var scatter = model.Series.OfType<ScatterSeries>().First();
+            scatter.IsVisible = false;
+
+            if (tracker != null)
             {
-                var (input, output) = net.ForwardArea((minX, minY), (maxX, maxY), 50);
-                window.DrawClasses(series, input, output);
-            };
+                scatter.IsVisible = true;
+
+                int count = 0;
+                window.fastTimer.Tick += (o, s) =>
+                {
+                    if (!window.TrackChanges)
+                        return;
+
+                    var point = tracker();
+                    scatter.Points[0] = new ScatterPoint(point.X, point.Y, value: 0);
+
+                    if (count > 50)
+                    {
+                        var (input, output) = net.ForwardArea((minX, minY), (maxX, maxY), 50);
+                        window.DrawClasses(50, output);
+                        count = 0;
+                    }
+                    else
+                    {
+                        plotView.InvalidatePlot(true);
+                    }
+
+                    count++;
+                };
+            }
+            else
+            {
+                window.slowTimer.Tick += (o, s) =>
+                {
+                    if (!window.TrackChanges)
+                        return;
+
+                    var (input, output) = net.ForwardArea((minX, minY), (maxX, maxY), 50);
+                    window.DrawClasses(50, output);
+                };
+            }            
 
             return window;
         }
