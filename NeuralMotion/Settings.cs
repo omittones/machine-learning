@@ -5,11 +5,26 @@ namespace NeuralMotion
 {
     public partial class Settings : Form
     {
-        public bool WriteStatus => uiWriteLog.Checked;
-        public bool DontShowSim => uiDontShowSim.Checked;
-        public bool ShowBallStatus => uiShowDiagnostics.Checked;
+        public bool WriteStatus
+        {
+            get => uiWriteLog.Checked;
+            set => uiWriteLog.Checked = value;
+        }
+            
+        public bool DontShowSim
+        {
+            get => uiDontShowSim.Checked;
+            set => uiDontShowSim.Checked = value;
+        }
+
+        public bool ShowDiagnostics
+        {
+            get => uiShowDiagnostics.Checked;
+            set => uiShowDiagnostics.Checked = value;
+        }
+
         public bool RealTime { get; set; }
-        public double Alpha { get; set; }
+        public double LearningRate { get; set; }
         public double Epsilon { get; set; }
 
         public Settings()
@@ -23,26 +38,26 @@ namespace NeuralMotion
             this.uiIncreaseLearningRate.Click += IncreaseLearningRate;
 
             this.RealTime = true;
-            this.Alpha = 0.1;
+            this.LearningRate = 0.001;
             this.Epsilon = 0.1;
         }
 
         private void NotifyAboutLR()
         {
-            Console.WriteLine($"Adjusting LR to {this.Alpha:0.0000000}");
+            Console.WriteLine($"Adjusting LR to {this.LearningRate:0.0000000}");
         }
 
         private void IncreaseLearningRate(object sender, EventArgs e)
         {
-            this.Alpha *= 1.5;
+            this.LearningRate *= 1.5;
             NotifyAboutLR();
         }
 
         private void DecreaseLearningRate(object sender, EventArgs e)
         {
-            this.Alpha /= 1.5;
-            if (this.Alpha < 0.000001)
-                this.Alpha = 0.000001;
+            this.LearningRate /= 1.5;
+            if (this.LearningRate < 0.000001)
+                this.LearningRate = 0.000001;
             NotifyAboutLR();
         }
 

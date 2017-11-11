@@ -53,29 +53,34 @@ public class MountainCar : IRenderer, IEnvironment
 
         var position = this.CarPosition;
         var velocity = this.CarVelocity;
-        if (position >= GoalPosition)
-        {
-            this.Done = true;
-            this.Reward = 1.0;
-        }
-        else
-        {
-            this.Reward = 0.0;
-            velocity += (this.Action - 1) * 0.001 + Math.Cos(3 * position) * (-0.0025);
-            velocity = Clip(velocity, -MaxSpeed, MaxSpeed);
-        }
 
-        if (!Strict)
-        {
-            var dist = GoalPosition - position;
-            this.Reward = 1.0 / (dist * dist * 100 + 1);
-        }
-
+        velocity += (this.Action - 1) * 0.001 + Math.Cos(3 * position) * (-0.0025);
+        velocity = Clip(velocity, -MaxSpeed, MaxSpeed);
         position += velocity;
         if (position < MinPosition || position > MaxPosition)
         {
             position = Clip(position, MinPosition, MaxPosition);
             velocity = -velocity * 0.1f;
+        }
+
+        if (Strict)
+        {
+            if (position >= GoalPosition)
+            {
+                this.Done = true;
+                this.Reward = 1.0;
+            }
+            else
+            {
+                this.Done = false;
+                this.Reward = 0;
+            }
+        }
+        else
+        {
+            var dist = GoalPosition - position;
+            this.Reward = 1.0 / (dist * dist * 100 + 1);
+
         }
 
         this.SimTime += 0.02f;

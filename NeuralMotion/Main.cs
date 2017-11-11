@@ -8,6 +8,7 @@ using NeuralMotion.Intelligence;
 using NeuralMotion.Views;
 using ConvNetSharp.Core.Training;
 using System.Drawing;
+using ConvNetSharp.Core;
 
 namespace NeuralMotion
 {
@@ -26,6 +27,9 @@ namespace NeuralMotion
 
         public Main()
         {
+            Ops<float>.SkipValidation = true;
+            Ops<double>.SkipValidation = true;
+
             var ctrl = new DQNCarController();
             var env = new MountainCar();
             env.Strict = true;
@@ -47,24 +51,43 @@ namespace NeuralMotion
 
             this.uiSettings = new Settings();
             this.uiSettings.RealTime = this.Session.RealTime;
+            this.uiSettings.DontShowSim = true;
+            this.uiSettings.ShowDiagnostics = true;
+            this.uiSettings.LearningRate = ctrl.Trainer.LearningRate;
             this.uiDisplay.Renderer = env;
 
-            //this.uiDiagnostics = PlotWindow.ValueHeatmaps(
-            //    ctrl.Net,
-            //    MountainCar.MinPosition, MountainCar.MaxPosition,
-            //    -MountainCar.MaxSpeed, MountainCar.MaxSpeed,
-            //    "position", "speed", "back,nothing,forward");
-
-            this.uiDiagnostics = PlotWindow.ClassHeatmap(
+            this.uiDiagnostics = PlotWindow.ValueHeatmaps(
                 ctrl.Net,
                 MountainCar.MinPosition, MountainCar.MaxPosition,
                 -MountainCar.MaxSpeed, MountainCar.MaxSpeed,
-                "position", "speed", "back,nothing,forward",
-                () => new PointD(env.CarPosition, env.CarVelocity));
+                "position", "speed", "back,nothing,forward");
+
+            //this.uiDiagnostics = PlotWindow.ClassHeatmap(
+            //    ctrl.Net,
+            //    MountainCar.MinPosition, MountainCar.MaxPosition,
+            //    -MountainCar.MaxSpeed, MountainCar.MaxSpeed,
+            //    "position", "speed", "back,nothing,forward",
+            //    () => new PointD(env.CarPosition, env.CarVelocity));
 
             this.uiDiagnostics.FormClosed += (s, e) => this.Close();
 
             refreshTimer.Interval = 1000 / 60;
+            refreshTimer.Tick += (s, e) =>
+            {
+                this.Session.RealTime = uiSettings.RealTime;
+                //this.Renderer.ShowKicks = uiSettings.ShowBallStatus;
+                //this.Renderer.ShowPosition = uiSettings.ShowBallStatus;
+                //this.Renderer.ShowSpeed = uiSettings.ShowBallStatus;
+
+                ctrl.Trainer.LearningRate = uiSettings.LearningRate;
+                //ctrl.Trainer.Epsilon = uiSettings.Epsilon;
+
+                this.uiDiagnostics.TrackChanges = !this.uiSettings.DontShowSim;
+
+                if (!this.uiSettings.DontShowSim)
+                    this.uiDisplay.Refresh();
+            };
+
             infoTimer.Interval = 1000;
             infoTimer.Tick += ShowInfo;
         }
@@ -126,7 +149,7 @@ namespace NeuralMotion
                         trainer = dqn.Trainer;
                         rewardRange = $"{dqn.Rewards.Min:0.000} ... {dqn.Rewards.Mean:0.000} ... {dqn.Rewards.Max:0.000}";
                         Console.WriteLine($"{trainer.Samples:0000}   LOSS: {dqn.Loss.Mean:0.00000000}   REWARDS: {rewardRange}");
-                        if (uiSettings.ShowBallStatus)
+                        if (uiSettings.ShowDiagnostics)
                         {
                             Console.WriteLine($"   - Replay count: {trainer.ReplayMemoryCount}");
                             Console.WriteLine($"   - QValue mean: {dqn.QValues.Mean:0.000} / {dqn.QValues.StandardDeviation:0.000}");
@@ -139,7 +162,7 @@ namespace NeuralMotion
                         trainer = dqn.Trainer;
                         rewardRange = $"{dqn.Rewards.Min:0.000000} ... {dqn.Rewards.Mean:0.000000} ... {dqn.Rewards.Max:0.000000}";
                         Console.WriteLine($"{trainer.Samples:0000}   LOSS: {dqn.Loss.Mean:0.00000000}   REWARDS: {rewardRange}");
-                        if (uiSettings.ShowBallStatus)
+                        if (uiSettings.ShowDiagnostics)
                         {
                             Console.WriteLine($"   - Replay count: {trainer.ReplayMemoryCount}");
                             Console.WriteLine($"   - QValue mean: {dqn.QValues.Mean:0.000} / {dqn.QValues.StandardDeviation:0.000}");
@@ -166,17 +189,5 @@ namespace NeuralMotion
             }
         }
 
-        private void OnRefreshTimer(object sender, EventArgs e)
-        {
-            this.Session.RealTime = uiSettings.RealTime;
-            //this.Renderer.ShowKicks = uiSettings.ShowBallStatus;
-            //this.Renderer.ShowPosition = uiSettings.ShowBallStatus;
-            //this.Renderer.ShowSpeed = uiSettings.ShowBallStatus;
-
-            this.uiDiagnostics.TrackChanges = !this.uiSettings.DontShowSim;
-
-            if (!this.uiSettings.DontShowSim)
-                this.uiDisplay.Refresh();
-        }
     }
 }

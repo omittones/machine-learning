@@ -37,15 +37,17 @@ namespace NeuralMotion
 
             this.Trainer = new DQNTrainer(Net, 3)
             {
-                LearningRate = 0.00001,
-                L1Decay = 0.1,
-                ClampErrorTo = 5,
+                LearningRate = 0.0001,
+                L1Decay = 0.0,
                 Epsilon = 1.0,
-                Gamma = 0.9,
+                Gamma = 0.99,
                 ReplaysPerIteration = 1000,
                 ReplayMemorySize = 1000,
                 ReplayMemoryDiscardStrategy = ExperienceDiscardStrategy.AverageReward,
-                ReplaySkipCount = 0
+                ReplaySkipCount = 0,
+                ClampErrorTo = 1,
+                MaxQValue = DQNTrainer.TheoreticalMaxQValue(0.99, 1),
+                MinQValue = DQNTrainer.TheoreticalMinQValue(0.99, 0)
             };
         }
 

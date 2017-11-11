@@ -42,7 +42,6 @@ namespace NeuralMotion
             // refreshTimer
             // 
             this.refreshTimer.Interval = 10;
-            this.refreshTimer.Tick += new System.EventHandler(this.OnRefreshTimer);
             // 
             // infoTimer
             // 
