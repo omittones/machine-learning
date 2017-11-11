@@ -13,10 +13,11 @@ public class MountainCar : IRenderer, IEnvironment
 
     public const double MinPosition = -1.2;
     public const double MaxPosition = 0.7;
-    public const double MaxSpeed = 0.07;
+    public const double MaxVelocity = 0.07;
     public const double GoalPosition = 0.5;
 
     public float SimTime { get; private set; }
+    public int SimFrame { get; private set; }
     public double CarPosition { get; private set; }
     public double CarVelocity { get; private set; }
     public double Reward { get; private set; }
@@ -55,12 +56,12 @@ public class MountainCar : IRenderer, IEnvironment
         var velocity = this.CarVelocity;
 
         velocity += (this.Action - 1) * 0.001 + Math.Cos(3 * position) * (-0.0025);
-        velocity = Clip(velocity, -MaxSpeed, MaxSpeed);
+        velocity = Clip(velocity, -MaxVelocity, MaxVelocity);
         position += velocity;
         if (position < MinPosition || position > MaxPosition)
         {
             position = Clip(position, MinPosition, MaxPosition);
-            velocity = -velocity * 0.1f;
+            velocity = -velocity * 0.01;
         }
 
         if (Strict)
@@ -84,6 +85,7 @@ public class MountainCar : IRenderer, IEnvironment
         }
 
         this.SimTime += 0.02f;
+        this.SimFrame++;
         this.CarPosition = position;
         this.CarVelocity = velocity;
     }
@@ -112,7 +114,7 @@ public class MountainCar : IRenderer, IEnvironment
         var bigText = new Font(FontFamily.GenericSansSerif, 0.05f, FontStyle.Regular, GraphicsUnit.Point);
         var smallText = new Font(FontFamily.GenericSansSerif, 0.03f, FontStyle.Regular, GraphicsUnit.Point);
 
-        graphics.DrawString(this.SimTime.ToString("0.0"), bigText, Brushes.Black, -0.8f, -0.8f);
+        graphics.DrawString($"{this.SimTime:0.00}  {this.SimFrame}", bigText, Brushes.Black, -0.8f, -0.8f);
 
         var scale = 2.1f / (float)(MaxPosition - MinPosition);
         graphics.ScaleTransform(scale, -scale);

@@ -43,7 +43,6 @@ namespace NeuralMotion
             this.Controller = ctrl;
 
             this.Session = Session.Create(env, ctrl);
-            this.Session.LimitSimulationDuration = 10;
             this.Session.RestartOnEnd = true;
             this.Session.RealTime = true;
 
@@ -56,18 +55,18 @@ namespace NeuralMotion
             this.uiSettings.LearningRate = ctrl.Trainer.LearningRate;
             this.uiDisplay.Renderer = env;
 
-            this.uiDiagnostics = PlotWindow.ValueHeatmaps(
-                ctrl.Net,
-                MountainCar.MinPosition, MountainCar.MaxPosition,
-                -MountainCar.MaxSpeed, MountainCar.MaxSpeed,
-                "position", "speed", "back,nothing,forward");
-
-            //this.uiDiagnostics = PlotWindow.ClassHeatmap(
+            //this.uiDiagnostics = PlotWindow.ValueHeatmaps(
             //    ctrl.Net,
             //    MountainCar.MinPosition, MountainCar.MaxPosition,
-            //    -MountainCar.MaxSpeed, MountainCar.MaxSpeed,
-            //    "position", "speed", "back,nothing,forward",
-            //    () => new PointD(env.CarPosition, env.CarVelocity));
+            //    -MountainCar.MaxVelocity * 10, MountainCar.MaxVelocity * 10,
+            //    "position", "speed", "back,nothing,forward");
+
+            this.uiDiagnostics = PlotWindow.ClassHeatmap(
+                ctrl.Net,
+                MountainCar.MinPosition, MountainCar.MaxPosition,
+                -MountainCar.MaxVelocity * 10, MountainCar.MaxVelocity * 10,
+                "position", "speed", "back,nothing,forward",
+                () => new PointD(env.CarPosition, env.CarVelocity));
 
             this.uiDiagnostics.FormClosed += (s, e) => this.Close();
 
@@ -160,14 +159,15 @@ namespace NeuralMotion
                         break;
                     case DQNCarController dqn:
                         trainer = dqn.Trainer;
-                        rewardRange = $"{dqn.Rewards.Min:0.000000} ... {dqn.Rewards.Mean:0.000000} ... {dqn.Rewards.Max:0.000000}";
-                        Console.WriteLine($"{trainer.Samples:0000}   LOSS: {dqn.Loss.Mean:0.00000000}   REWARDS: {rewardRange}");
+                        Console.WriteLine($"{trainer.Samples:0000}   LOSS: {dqn.Loss.Mean:0.00000000}   REWARDS: {dqn.Rewards.ToRangeString()}");
                         if (uiSettings.ShowDiagnostics)
                         {
                             Console.WriteLine($"   - Replay count: {trainer.ReplayMemoryCount}");
                             Console.WriteLine($"   - QValue mean: {dqn.QValues.Mean:0.000} / {dqn.QValues.StandardDeviation:0.000}");
-                            Console.WriteLine($"   - QValue range: {dqn.QValues.Min:0.000} ... {dqn.QValues.Max:0.000}");
+                            Console.WriteLine($"   - QValue range: {dqn.QValues.ToRangeString()}");
+                            Console.WriteLine($"   - Reward range: {dqn.Rewards.ToRangeString()}");
                             Console.WriteLine($"   - Epsilon: {dqn.Trainer.Epsilon:0.0000}");
+                            Console.WriteLine($"   - Good vs. Bad: {dqn.GoalReached}/{dqn.TrainingTimedout}   ({(dqn.GoalReached * 100.0 / (dqn.GoalReached + dqn.TrainingTimedout)):0.00}%)");
                         }
                         this.uiFitnessPlot.AddPoint(trainer.Samples, dqn.Loss.Mean, dqn.Rewards.Mean);
                         break;

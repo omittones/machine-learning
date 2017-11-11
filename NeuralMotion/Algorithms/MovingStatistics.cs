@@ -33,5 +33,13 @@ namespace NeuralMotion
             normals.Push(value);
             ranges.Push(value);
         }
+
+        public string ToRangeString(string format = "0.000")
+        {
+            var min = this.Min.ToString(format);
+            var mean = this.Mean.ToString(format);
+            var max = this.Max.ToString(format);
+            return $"{min} ... {mean} ... {max}";
+        }
     }
 }

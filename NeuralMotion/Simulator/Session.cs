@@ -8,13 +8,6 @@ namespace NeuralMotion.Simulator
 {
     public abstract class Session
     {
-        public static Session Create<TEnvironment>(TEnvironment environment, IController<TEnvironment> controller)
-            where TEnvironment : IEnvironment
-        {
-            return new Session<TEnvironment>(environment, controller);
-        }
-
-        public float? LimitSimulationDuration { get; set; }
         public bool RealTime { set; get; }
         public bool RestartOnEnd { set; get; }
 
@@ -24,7 +17,6 @@ namespace NeuralMotion.Simulator
 
         public Session(IEnvironment environment)
         {
-            this.LimitSimulationDuration = 10;
             this.RealTime = true;
             this.RestartOnEnd = false;
             this.environment = environment;
@@ -86,8 +78,8 @@ namespace NeuralMotion.Simulator
             {
                 while (this.RestartOnEnd)
                 {
-                    while (!this.LimitSimulationDuration.HasValue ||
-                            this.environment.SimTime < this.LimitSimulationDuration)
+                    bool done = false;
+                    while (!done)
                     {
                         if (token.IsCancellationRequested)
                             return;
@@ -95,7 +87,7 @@ namespace NeuralMotion.Simulator
                         var localStart = DateTime.UtcNow;
                         var simStart = this.environment.SimTime;
 
-                        var done = this.Step();
+                        done = this.Step();
 
                         if (this.RealTime)
                         {
@@ -104,8 +96,6 @@ namespace NeuralMotion.Simulator
                             if (simDuration > localDuration)
                                 Thread.Sleep((int)((simDuration - localDuration) * 1000));
                         }
-
-                        if (done) break;
                     }
 
                     Initialize();
@@ -116,6 +106,12 @@ namespace NeuralMotion.Simulator
                 Console.WriteLine(ex.Message);
                 throw;
             }
+        }
+
+        public static Session Create<TEnvironment>(TEnvironment environment, IController<TEnvironment> controller)
+           where TEnvironment : IEnvironment
+        {
+            return new Session<TEnvironment>(environment, controller);
         }
     }
 

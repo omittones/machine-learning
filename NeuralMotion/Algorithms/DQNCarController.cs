@@ -4,6 +4,8 @@ using ConvNetSharp.Core.Layers.Double;
 using ConvNetSharp.Core.Training;
 using NeuralMotion.Intelligence;
 using System;
+using System.Threading;
+using System.Linq;
 
 namespace NeuralMotion
 {
@@ -15,7 +17,7 @@ namespace NeuralMotion
         public MovingStatistics Rewards { get; }
         public Net<double> Net { get; }
 
-        private readonly double[] input;
+        private readonly double[] state;
         private readonly Dictionary<long, Action> pendingAction = null;
 
         public DQNCarController()
@@ -25,7 +27,7 @@ namespace NeuralMotion
             this.QValues = new MovingStatistics(1000);
             this.Rewards = new MovingStatistics(1000);
 
-            this.input = new double[2];
+            this.state = new double[2];
             this.Net = new Net<double>();
             this.Net.AddLayer(new InputLayer(1, 1, 2));
             this.Net.AddLayer(new FullyConnLayer(30));
@@ -37,68 +39,82 @@ namespace NeuralMotion
 
             this.Trainer = new DQNTrainer(Net, 3)
             {
-                LearningRate = 0.0001,
+                LearningRate = 0.001,
                 L1Decay = 0.0,
                 Epsilon = 1.0,
                 Gamma = 0.99,
-                ReplaysPerIteration = 1000,
                 ReplayMemorySize = 1000,
                 ReplayMemoryDiscardStrategy = ExperienceDiscardStrategy.AverageReward,
+                ReplaysPerIteration = 1000,
                 ReplaySkipCount = 0,
-                ClampErrorTo = 1,
+                ClampErrorTo = 100,
                 MaxQValue = DQNTrainer.TheoreticalMaxQValue(0.99, 1),
-                MinQValue = DQNTrainer.TheoreticalMinQValue(0.99, 0)
+                MinQValue = DQNTrainer.TheoreticalMinQValue(0.99, 0),
+                FreezeInterval = 200
             };
+
+            this.GoalReached = 0;
+            this.TrainingTimedout = 0;
         }
 
-        private double last = 0;
+        //private double last = 0;
 
         public bool Done { get; private set; }
+        public int GoalReached { get; private set; }
+        public int TrainingTimedout { get; private set; }
 
         private int step = 0;
+        private double reward = double.MinValue;
+        private Decision? decision = null;
         public void Control(MountainCar environment)
         {
-            const double epsDelta = 0.001;
+            const double epsDelta = 0.0009;
             const double minEpsilon = 0.1;
             const double maxEpsilon = 1.0;
 
-            if (environment.SimTime - last > 0.1 ||
-                environment.SimTime < last)
+            if (step % 10 == 0)
             {
-                last = environment.SimTime;
+                state[0] = environment.CarPosition;
+                state[1] = environment.CarVelocity * 10;
 
                 lock (this.Net)
                 {
-                    input[0] = environment.CarPosition;
-                    input[1] = environment.CarVelocity;
+                    if (decision.HasValue)
+                    {
+                        this.Trainer.Learn(
+                            decision.Value,
+                            state,
+                            reward);
 
-                    var decision = this.Trainer.Act(input);
+                        this.QValues.Push(this.Trainer.QValue);
+                        this.Loss.Push(this.Trainer.Loss);
+                    }
 
-                    environment.Action = decision.Action;
-
-                    environment.Step();
-
-                    var decrease = Math.Pow(Math.E, -epsDelta * step);
-                    var range = maxEpsilon - minEpsilon;
-                    this.Trainer.Epsilon = minEpsilon + range * decrease;
-                    step++;
-
-                    this.Trainer.Learn(
-                        decision,
-                        new[] { environment.CarPosition, environment.CarVelocity },
-                        environment.Reward);
-
-                    this.QValues.Push(this.Trainer.QValue);
-                    this.Rewards.Push(environment.Reward);
-                    this.Loss.Push(this.Trainer.Loss);
-
-                    this.Done = environment.Done;
+                    decision = this.Trainer.Act(state);
                 }
+
+                environment.Action = decision.Value.Action;
+
+                var decrease = Math.Pow(Math.E, -epsDelta * step);
+                var range = maxEpsilon - minEpsilon;
+                this.Trainer.Epsilon = minEpsilon + range * decrease;
+
+                reward = double.MinValue;
             }
-            else
-            {
-                environment.Step();
-            }
+
+            environment.Step();
+            this.Rewards.Push(environment.Reward);
+            if (environment.Reward > reward)
+                reward = environment.Reward;
+
+            this.Done = environment.Done ||
+                    environment.SimTime > 10;
+            if (this.Done && environment.Done)
+                this.GoalReached++;
+            else if (this.Done)
+                this.TrainingTimedout++;
+
+            step++;
         }
     }
 }

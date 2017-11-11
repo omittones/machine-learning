@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
-VisualStudioVersion = 15.0.26730.10
+VisualStudioVersion = 15.0.27004.2008
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NeuralMotion", "NeuralMotion\NeuralMotion.csproj", "{B62C0990-B78C-416B-8A68-9A68BBEEE0C4}"
 EndProject
@@ -37,6 +37,8 @@ Project("{E24C65DC-7377-472B-9ABA-BC803B73C61A}") = "reinforcejs", "reinforcejs\
 	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ConvNetSharp.Volume.Tests", "conv-net-sharp\src\ConvNetSharp.Volume.Tests\ConvNetSharp.Volume.Tests.csproj", "{45892049-C55F-411B-9E4C-6240CA6CAC39}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ConvNetSharp.Core.Tests", "conv-net-sharp\src\ConvNetSharp.Core.Tests\ConvNetSharp.Core.Tests.csproj", "{507EE568-0C1E-451D-851E-4FB2D96B9E5F}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -76,6 +78,10 @@ Global
 		{45892049-C55F-411B-9E4C-6240CA6CAC39}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{45892049-C55F-411B-9E4C-6240CA6CAC39}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{45892049-C55F-411B-9E4C-6240CA6CAC39}.Release|Any CPU.Build.0 = Release|Any CPU
+		{507EE568-0C1E-451D-851E-4FB2D96B9E5F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{507EE568-0C1E-451D-851E-4FB2D96B9E5F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{507EE568-0C1E-451D-851E-4FB2D96B9E5F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{507EE568-0C1E-451D-851E-4FB2D96B9E5F}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
