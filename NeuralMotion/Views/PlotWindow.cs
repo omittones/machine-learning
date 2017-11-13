@@ -105,7 +105,7 @@ namespace NeuralMotion.Views
             var window = new PlotWindow();
             window.InitializeComponent();
             window.SuspendLayout();
-            
+
             var flowPanel = new FlowLayoutPanel();
             window.Controls.Add(flowPanel);
             flowPanel.Dock = DockStyle.Fill;
@@ -173,7 +173,12 @@ namespace NeuralMotion.Views
                 if (!window.TrackChanges)
                     return;
 
-                var (input, output) = net.ForwardArea((minX, minY), (maxX, maxY), 50);
+                Volume<double> output;
+                lock (net)
+                {
+                    (_, output) = net.ForwardArea((minX, minY), (maxX, maxY), 50);
+                }
+
                 window.DrawHeatmaps(50, output);
             };
 
@@ -275,7 +280,7 @@ namespace NeuralMotion.Views
                     }
                 }
             };
-        
+
             var plotView = new PlotView();
             plotView.Dock = DockStyle.Fill;
             plotView.Model = model;
@@ -300,7 +305,11 @@ namespace NeuralMotion.Views
 
                     if (count > 50)
                     {
-                        var (input, output) = net.ForwardArea((minX, minY), (maxX, maxY), 50);
+                        Volume<double> output;
+                        lock (net)
+                        {
+                            (_, output) = net.ForwardArea((minX, minY), (maxX, maxY), 50);
+                        }
                         window.DrawClasses(50, output);
                         count = 0;
                     }
@@ -319,10 +328,14 @@ namespace NeuralMotion.Views
                     if (!window.TrackChanges)
                         return;
 
-                    var (input, output) = net.ForwardArea((minX, minY), (maxX, maxY), 50);
+                    Volume<double> output;
+                    lock (net)
+                    {
+                        (_, output) = net.ForwardArea((minX, minY), (maxX, maxY), 50);
+                    }
                     window.DrawClasses(50, output);
                 };
-            }            
+            }
 
             return window;
         }

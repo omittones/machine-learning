@@ -48,14 +48,14 @@ namespace NeuralMotion
 
             var action = Trainer.Act(inputs);
 
-            HandleOutput(actor, action[0]);
+            HandleOutput(actor, action.Action);
 
-            this.rollouts.AppendToPath(actor.Id, inputs, action[0], () =>
-            {
-                var reward = GetReward(arena, actor);
-                Rewards.Push(reward);
-                return reward;
-            });
+            //this.rollouts.AppendToPath(actor.Id, inputs, action[0], () =>
+            //{
+            //    var reward = GetReward(arena, actor);
+            //    Rewards.Push(reward);
+            //    return reward;
+            //});
 
             if (this.rollouts.Full)
             {

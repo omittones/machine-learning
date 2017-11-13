@@ -58,7 +58,7 @@ namespace NeuralMotion
                 .Select(p => p.Return)
                 .ToArray();
 
-            trainer.Reinforce(inputs, pathActions, pathReturns);
+            //trainer.Reinforce(inputs, pathActions, pathReturns);
 
             paths.Clear();
         }
