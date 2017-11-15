@@ -17,6 +17,10 @@ namespace NeuralMotion
         public MovingStatistics Rewards { get; }
         public Net<double> Net { get; }
 
+        public bool Done { get; private set; }
+        public int GoalReached { get; private set; }
+        public int TrainingTimedout { get; private set; }
+
         private readonly double[] state;
         private readonly Dictionary<long, Action> pendingAction = null;
 
@@ -30,9 +34,7 @@ namespace NeuralMotion
             this.state = new double[2];
             this.Net = new Net<double>();
             this.Net.AddLayer(new InputLayer(1, 1, 2));
-            this.Net.AddLayer(new FullyConnLayer(30));
-            this.Net.AddLayer(new LeakyReluLayer());
-            this.Net.AddLayer(new FullyConnLayer(20));
+            this.Net.AddLayer(new FullyConnLayer(10));
             this.Net.AddLayer(new LeakyReluLayer());
             this.Net.AddLayer(new FullyConnLayer(3));
             this.Net.AddLayer(new RegressionLayer());
@@ -56,12 +58,6 @@ namespace NeuralMotion
             this.GoalReached = 0;
             this.TrainingTimedout = 0;
         }
-
-        //private double last = 0;
-
-        public bool Done { get; private set; }
-        public int GoalReached { get; private set; }
-        public int TrainingTimedout { get; private set; }
 
         private int step = 0;
         private double reward = double.MinValue;

@@ -105,14 +105,12 @@
     <Compile Include="Algorithms\BallController.cs" />
     <Compile Include="Algorithms\DQNBallController.cs" />
     <Compile Include="Algorithms\DQNCarController.cs" />
+    <Compile Include="Algorithms\PolicyGradientCarController.cs" />
     <Compile Include="Evolution\CrossEntropyMethod.cs" />
     <Compile Include="Intelligence\AForgeBrain.cs" />
     <Compile Include="Intelligence\ConvNetBrain.cs" />
     <Compile Include="Intelligence\IController.cs" />
     <Compile Include="Algorithms\MovingStatistics.cs" />
-    <Compile Include="Algorithms\Path.cs" />
-    <Compile Include="Algorithms\PolicyGradientsController.cs" />
-    <Compile Include="Algorithms\RolloutCollection.cs" />
     <Compile Include="Simulator\Balls\BallArena.cs" />
     <Compile Include="Simulator\IEnvironment.cs" />
     <Compile Include="Simulator\Session.cs" />

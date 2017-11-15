@@ -1,20 +1,14 @@
 ﻿using System;
-using ConvNetSharp.Core.Training.Double;
 using ConvNetSharp.Core.Layers.Double;
 using ConvNetSharp.Volume.Double;
 using ConvNetSharp.Core;
 using ConvNetSharp.Volume;
 using System.Linq;
 using System.Threading;
-using System.Windows.Forms;
 using System.Threading.Tasks;
 using ConvNetSharp.Core.Training;
 using NeuralMotion.Evolution;
-using ConvNetSharp.Core.Layers;
 using System.Collections.Generic;
-using OxyPlot;
-using OxyPlot.Axes;
-using OxyPlot.Series;
 using NeuralMotion.Views;
 using Util;
 
@@ -24,7 +18,7 @@ namespace NeuralMotion.Test
     {
         public static VolumeBuilder<double> build => BuilderInstance<double>.Volume;
         public static Random rnd = new Random(DateTime.Now.Millisecond);
-        public static Func<Volume<double>, int[]> getClasses = GetClassesForXor;
+        public static Func<Volume<double>, int[]> getClasses = GetClassesForBorders;
 
         public static void Main(string[] args)
         {
@@ -40,7 +34,7 @@ namespace NeuralMotion.Test
 
         private static Task PlotNet(Net<double> net)
         {
-            return Plot.Show(() => PlotWindow.ValueHeatmaps(
+            return Plot.Show(() => PlotWindow.ClassHeatmap(
                 net,
                 minX: 0,
                 maxX: 1,
@@ -65,14 +59,12 @@ namespace NeuralMotion.Test
 
             var rewards = new MovingStatistics(100);
             var means = new MovingStatistics(100);
-            var pgTrainer = new ReinforcementTrainer(net)
+            var pgTrainer = new PolicyGradientTrainer(net)
             {
-                LearningRate = 5,
+                LearningRate = 0.1,
                 Momentum = 0,
                 L2Decay = 0,
-                L1Decay = 0,
-                RewardDiscountGamma = 0,
-                ApplyBaselineAndNormalizeReturns = true
+                L1Decay = 0
             };
             
             var inputs = BuilderInstance<double>.Volume.SameAs(Shape.From(1, 1, 2, 1));
@@ -105,11 +97,11 @@ namespace NeuralMotion.Test
                     }
                 }
 
-                const int rolloutSteps = 1;
-                var paths = new ConvNetSharp.Core.Training.Path[1000];
-
+                
+                var paths = new ConvNetSharp.Core.Training.Path[2000];
                 for (var b = 0; b < paths.Length; b++)
                 {
+                    var rolloutSteps = rnd.Next(1, 10);
                     var path = new ConvNetSharp.Core.Training.Path();
                     var reward = 0.0;
                     for (var i = 0; i < rolloutSteps; i++)
@@ -117,7 +109,7 @@ namespace NeuralMotion.Test
                         inputs.MapInplace(v => rnd.NextDouble());
                         var expected = getClasses(inputs);
 
-                        ActionGradient action;
+                        ActionInput action;
                         lock (net)
                         {
                             action = pgTrainer.Act(inputs);
@@ -130,10 +122,9 @@ namespace NeuralMotion.Test
                             reward -= 1.0;
 
                     }
-                    path.SetReward(reward / rolloutSteps, 0);
+                    path.SetReward(reward / rolloutSteps);
                     paths[b] = path;
                 }
-               
 
                 lock (net)
                 {
