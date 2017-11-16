@@ -1,16 +1,20 @@
 ﻿using ConvNetSharp.Core;
+using ConvNetSharp.Core.Layers;
 using ConvNetSharp.Core.Layers.Double;
 using ConvNetSharp.Core.Training;
 using NeuralMotion.Intelligence;
+using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace NeuralMotion
 {
-    public class PolicyGradientCarController : IController<MountainCar>
+    public class ActorCriticCarController : IController<MountainCar>
     {
-        public VanillaPolicyGradientTrainer Trainer { get; }
+        public ActorCriticTrainer Trainer { get; }
         public MovingStatistics Rewards { get; }
-        public Net<double> Net { get; }
+        public Net<double> Policy { get; }
+        public Net<double> Value { get; }
 
         private readonly double[] state;
         private readonly List<Path> paths;
@@ -23,23 +27,36 @@ namespace NeuralMotion
         public int Samples { get; private set; }
         public int Epochs { get; private set; }
 
-        public PolicyGradientCarController()
+        public ActorCriticCarController()
         {
-            this.Net = new Net<double>();
-            this.Net.AddLayer(new InputLayer(1, 1, 2));
-            this.Net.AddLayer(new FullyConnLayer(10));
-            this.Net.AddLayer(new LeakyReluLayer());
-            this.Net.AddLayer(new FullyConnLayer(3));
-            this.Net.AddLayer(new SoftmaxLayer());
+            this.Policy = new Net<double>();
+            this.Policy.AddLayer(new InputLayer(1, 1, 2));
+            this.Policy.AddLayer(new FullyConnLayer(10));
+            this.Policy.AddLayer(new LeakyReluLayer());
+            this.Policy.AddLayer(new FullyConnLayer(3));
+            this.Policy.AddLayer(new SoftmaxLayer());
+
+            this.Value = new Net<double>();
+            this.Value.AddLayer(new InputLayer(1, 1, 2));
+            this.Value.AddLayer(new FullyConnLayer(10));
+            this.Value.AddLayer(new LeakyReluLayer());
+            this.Value.AddLayer(new FullyConnLayer(1));
+            this.Value.AddLayer(new RegressionLayer());
 
             this.Rewards = new MovingStatistics(1000);
 
             this.state = new double[2];
             this.paths = new List<Path>();
 
-            this.Trainer = new VanillaPolicyGradientTrainer(Net)
+            var valueTrainer = new SgdTrainer<double>(Value)
             {
-                LearningRate = 0.1,
+                LearningRate = 0.2,
+                L1Decay = 0.0
+            };
+
+            this.Trainer = new ActorCriticTrainer(Policy, valueTrainer)
+            {
+                LearningRate = 0.01,
                 L1Decay = 0.0
             };
 
@@ -64,7 +81,7 @@ namespace NeuralMotion
                 state[1] = environment.CarVelocity * 10;
 
                 ActionInput action;
-                lock (this.Net)
+                lock (this.Policy)
                 {
                     action = this.Trainer.Act(state);
                     path.Add(action);
@@ -96,11 +113,12 @@ namespace NeuralMotion
 
             if (paths.Count >= 100)
             {
-                lock (this.Net)
-                {
-                    this.Trainer.Reinforce(paths.ToArray());
-                    this.Epochs++;
-                }
+                lock (this.Value)
+                    lock (this.Policy)
+                    {
+                        this.Trainer.Reinforce(paths.ToArray());
+                        this.Epochs++;
+                    }
                 paths.Clear();
             }
         }

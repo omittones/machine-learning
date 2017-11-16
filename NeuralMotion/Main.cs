@@ -15,10 +15,12 @@ namespace NeuralMotion
     public partial class Main : Form
     {
         private static readonly Random rnd = new Random();
+
+        private readonly PlotWindow uiDiagnostics;
+        private readonly PlotWindow uiValueWindow;
         private readonly Settings uiSettings;
         private bool closing;
         private Task simulation;
-        private readonly PlotWindow uiDiagnostics;
 
         public Session Session { get; private set; }
         public IEnvironment Environment { get; private set; }
@@ -30,7 +32,7 @@ namespace NeuralMotion
             Ops<float>.SkipValidation = true;
             Ops<double>.SkipValidation = true;
 
-            var ctrl = new PolicyGradientCarController();
+            var ctrl = new ActorCriticCarController();
             var env = new MountainCar();
             env.Strict = true;
 
@@ -56,10 +58,15 @@ namespace NeuralMotion
             this.uiDisplay.Renderer = env;
 
             this.uiDiagnostics = PlotWindow.ValueHeatmaps(
-                ctrl.Net,
+                ctrl.Policy,
                 MountainCar.MinPosition, MountainCar.MaxPosition,
                 -MountainCar.MaxVelocity * 10, MountainCar.MaxVelocity * 10,
                 "position", "speed", "back,nothing,forward");
+
+            this.uiValueWindow = PlotWindow.ValueHeatmaps(
+                ctrl.Value,
+                MountainCar.MinPosition, MountainCar.MaxPosition,
+                -MountainCar.MaxVelocity * 10, MountainCar.MaxVelocity * 10);
 
             //this.uiDiagnostics = PlotWindow.ClassHeatmap(
             //    ctrl.Net,
@@ -69,6 +76,7 @@ namespace NeuralMotion
             //    () => new PointD(env.CarPosition, env.CarVelocity));
 
             this.uiDiagnostics.FormClosed += (s, e) => this.Close();
+            this.uiValueWindow.FormClosed += (s, e) => this.Close();
 
             refreshTimer.Interval = 1000 / 60;
             refreshTimer.Tick += (s, e) =>
@@ -82,6 +90,7 @@ namespace NeuralMotion
                 //ctrl.Trainer.Epsilon = uiSettings.Epsilon;
 
                 this.uiDiagnostics.TrackChanges = !this.uiSettings.DontShowSim;
+                this.uiValueWindow.TrackChanges = !this.uiSettings.DontShowSim;
 
                 if (!this.uiSettings.DontShowSim)
                     this.uiDisplay.Refresh();
@@ -129,6 +138,11 @@ namespace NeuralMotion
             {
                 uiDiagnostics.Show();
             }
+
+            if (uiValueWindow != null)
+            {
+                uiValueWindow.Show();
+            }
         }
 
         private void ShowInfo(object sender, EventArgs args)
@@ -139,7 +153,7 @@ namespace NeuralMotion
                 DQNTrainer trainer;
                 switch (Controller)
                 {
-                    case PolicyGradientCarController pg:
+                    case ActorCriticCarController pg:
                         Console.WriteLine($"{pg.Epochs:0000}  REWARDS: {pg.Rewards.ToRangeString()}");
                         if (uiSettings.ShowDiagnostics)
                         {
