@@ -59,7 +59,7 @@ namespace NeuralMotion.Test
 
             var rewards = new MovingStatistics(100);
             var means = new MovingStatistics(100);
-            var pgTrainer = new PolicyGradientTrainer(net)
+            var pgTrainer = new VanillaPolicyGradientTrainer(net)
             {
                 LearningRate = 0.1,
                 Momentum = 0,

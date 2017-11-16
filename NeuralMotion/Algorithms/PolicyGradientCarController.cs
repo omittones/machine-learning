@@ -11,7 +11,7 @@ namespace NeuralMotion
 {
     public class PolicyGradientCarController : IController<MountainCar>
     {
-        public PolicyGradientTrainer Trainer { get; }
+        public VanillaPolicyGradientTrainer Trainer { get; }
         public MovingStatistics Rewards { get; }
         public Net<double> Net { get; }
 
@@ -40,7 +40,7 @@ namespace NeuralMotion
             this.state = new double[2];
             this.paths = new List<Path>();
 
-            this.Trainer = new PolicyGradientTrainer(Net)
+            this.Trainer = new VanillaPolicyGradientTrainer(Net)
             {
                 LearningRate = 0.1,
                 L1Decay = 0.0
