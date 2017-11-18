@@ -32,7 +32,11 @@ namespace NeuralMotion.Views
             this.fastTimer.Enabled = true;
         }
 
-        private void DrawHeatmaps(int resolution, Volume<double> output)
+        private void DrawHeatmaps(
+            int resolution,
+            Volume<double> output,
+            double? minClass = null,
+            double? maxClass = null)
         {
             double min = double.MaxValue, max = double.MinValue;
             int count;
@@ -53,12 +57,15 @@ namespace NeuralMotion.Views
                         count++;
                     }
 
-                //for (var y = 0; y < resolution; y += 1)
-                //    for (var x = 0; x < resolution; x += 1)
-                //        hms.Data[x, y] = 1.0 * x / resolution + 1000.0 * y / resolution;
-                
-                min = Math.Min(min, hms.Data.Min2D());
-                max = Math.Max(max, hms.Data.Max2D());
+                if (minClass.HasValue)
+                    min = minClass.Value;
+                else
+                    min = Math.Min(min, hms.Data.Min2D());
+
+                if (maxClass.HasValue)
+                    max = maxClass.Value;
+                else
+                    max = Math.Max(max, hms.Data.Max2D());
             }
 
             for (var channel = 0; channel < output.Depth; channel++)
@@ -98,6 +105,8 @@ namespace NeuralMotion.Views
             double maxX = 1,
             double minY = 0,
             double maxY = 1,
+            double? minClass = null,
+            double? maxClass = null,
             string xTitle = "X",
             string yTitle = "Y",
             string titles = null)
@@ -121,9 +130,7 @@ namespace NeuralMotion.Views
                         new LinearColorAxis
                         {
                             Palette = OxyPalettes.Jet(100),
-                            Position = AxisPosition.Right,
-                            Minimum = -1,
-                            Maximum = 2
+                            Position = AxisPosition.Right
                         },
                         new LinearAxis
                         {
@@ -156,11 +163,12 @@ namespace NeuralMotion.Views
                         }
                     }
                 };
-
+                
                 var plotView = new PlotView()
                 {
                     Size = new Size(450, 350)
                 };
+
                 plotView.Model = model;
                 flowPanel.Controls.Add(plotView);
                 size.Width += plotView.Size.Width;
@@ -179,7 +187,10 @@ namespace NeuralMotion.Views
                     (_, output) = net.ForwardArea((minX, minY), (maxX, maxY), 50);
                 }
 
-                window.DrawHeatmaps(50, output);
+                window.DrawHeatmaps(50,
+                    output,
+                    minClass,
+                    maxClass);
             };
 
             return window;

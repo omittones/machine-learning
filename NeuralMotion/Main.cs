@@ -46,22 +46,26 @@ namespace NeuralMotion
 
             this.Session = Session.Create(env, ctrl);
             this.Session.RestartOnEnd = true;
-            this.Session.RealTime = true;
+            this.Session.RealTime = false;
 
             InitializeComponent();
 
             this.uiSettings = new Settings();
             this.uiSettings.RealTime = this.Session.RealTime;
-            this.uiSettings.DontShowSim = true;
+            this.uiSettings.DontShowSim = false;
             this.uiSettings.ShowDiagnostics = true;
-            this.uiSettings.LearningRate = ctrl.Trainer.LearningRate;
+            this.uiSettings.LearningRate = ctrl.PolicyTrainer.LearningRate;
             this.uiDisplay.Renderer = env;
 
             this.uiDiagnostics = PlotWindow.ValueHeatmaps(
                 ctrl.Policy,
                 MountainCar.MinPosition, MountainCar.MaxPosition,
                 -MountainCar.MaxVelocity * 10, MountainCar.MaxVelocity * 10,
-                "position", "speed", "back,nothing,forward");
+                minClass: 0,
+                maxClass: 1,
+                xTitle: "position",
+                yTitle: "speed",
+                titles: "back,nothing,forward");
 
             this.uiValueWindow = PlotWindow.ValueHeatmaps(
                 ctrl.Value,
@@ -86,7 +90,7 @@ namespace NeuralMotion
                 //this.Renderer.ShowPosition = uiSettings.ShowBallStatus;
                 //this.Renderer.ShowSpeed = uiSettings.ShowBallStatus;
 
-                ctrl.Trainer.LearningRate = uiSettings.LearningRate;
+                ctrl.PolicyTrainer.LearningRate = uiSettings.LearningRate;
                 //ctrl.Trainer.Epsilon = uiSettings.Epsilon;
 
                 this.uiDiagnostics.TrackChanges = !this.uiSettings.DontShowSim;
@@ -153,7 +157,16 @@ namespace NeuralMotion
                 DQNTrainer trainer;
                 switch (Controller)
                 {
-                    case ActorCriticCarController pg:
+                    case ActorCriticCarController ac:
+                        Console.WriteLine($"{ac.Epochs:0000}  REWARDS: {ac.Rewards.ToRangeString()}");
+                        if (uiSettings.ShowDiagnostics)
+                        {
+                            Console.WriteLine($"   - Estimated rewards: {ac.PolicyTrainer.EstimatedRewards:0.000}");
+                            Console.WriteLine($"   - Good vs. Bad: {ac.GoalReached}/{ac.TrainingTimedout}   ({(ac.GoalReached * 100.0 / (ac.GoalReached + ac.TrainingTimedout)):0.00}%)");
+                        }
+                        this.uiFitnessPlot.AddPoint(ac.Epochs, ac.ValueTrainer.Loss, ac.PolicyTrainer.EstimatedRewards);
+                        break;
+                    case PolicyGradientCarController pg:
                         Console.WriteLine($"{pg.Epochs:0000}  REWARDS: {pg.Rewards.ToRangeString()}");
                         if (uiSettings.ShowDiagnostics)
                         {

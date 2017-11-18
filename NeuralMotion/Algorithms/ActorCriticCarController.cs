@@ -11,13 +11,15 @@ namespace NeuralMotion
 {
     public class ActorCriticCarController : IController<MountainCar>
     {
-        public ActorCriticTrainer Trainer { get; }
+        public ActorCriticTrainer PolicyTrainer { get; }
+        public SgdTrainer<double> ValueTrainer { get; private set; }
         public MovingStatistics Rewards { get; }
         public Net<double> Policy { get; }
         public Net<double> Value { get; }
 
         private readonly double[] state;
         private readonly List<Path> paths;
+        
         private Path path;
         private double reward;
 
@@ -48,15 +50,15 @@ namespace NeuralMotion
             this.state = new double[2];
             this.paths = new List<Path>();
 
-            var valueTrainer = new SgdTrainer<double>(Value)
+            this.ValueTrainer = new SgdTrainer<double>(Value)
             {
-                LearningRate = 0.2,
+                LearningRate = 0.1,
                 L1Decay = 0.0
             };
 
-            this.Trainer = new ActorCriticTrainer(Policy, valueTrainer)
+            this.PolicyTrainer = new ActorCriticTrainer(Policy, ValueTrainer)
             {
-                LearningRate = 0.01,
+                LearningRate = 0.001,
                 L1Decay = 0.0
             };
 
@@ -67,6 +69,17 @@ namespace NeuralMotion
 
         public void Control(MountainCar environment)
         {
+            if (Epochs < 100000)
+            {
+                PolicyTrainer.Bootstraping = true;
+                ValueTrainer.LearningRate = 0.1;
+            }
+            else
+            {
+                PolicyTrainer.Bootstraping = false;
+                ValueTrainer.LearningRate = 0.01;
+            }
+
             if (this.path == null)
             {
                 this.path = new Path();
@@ -83,7 +96,7 @@ namespace NeuralMotion
                 ActionInput action;
                 lock (this.Policy)
                 {
-                    action = this.Trainer.Act(state);
+                    action = this.PolicyTrainer.Act(state);
                     path.Add(action);
                 }
 
@@ -111,12 +124,12 @@ namespace NeuralMotion
                 this.reward = double.MinValue;
             }
 
-            if (paths.Count >= 100)
+            if (paths.Count >= 10)
             {
                 lock (this.Value)
                     lock (this.Policy)
                     {
-                        this.Trainer.Reinforce(paths.ToArray());
+                        this.PolicyTrainer.Reinforce(paths.ToArray());
                         this.Epochs++;
                     }
                 paths.Clear();
