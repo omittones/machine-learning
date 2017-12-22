@@ -115,12 +115,12 @@ namespace NeuralMotion.Views
             window.InitializeComponent();
             window.SuspendLayout();
 
-            var flowPanel = new FlowLayoutPanel();
-            window.Controls.Add(flowPanel);
-            flowPanel.Dock = DockStyle.Fill;
-
             var channels = net.Layers.Last().OutputDepth;
             var size = new Size(50, 400);
+            var flowLayout = new FlowLayoutPanel();
+            window.Controls.Add(flowLayout);
+            flowLayout.Dock = DockStyle.Fill;
+
             for (var i = 0; i < channels; i++)
             {
                 var model = new PlotModel()
@@ -163,16 +163,17 @@ namespace NeuralMotion.Views
                         }
                     }
                 };
-                
+
                 var plotView = new PlotView()
                 {
                     Size = new Size(450, 350)
                 };
 
                 plotView.Model = model;
-                flowPanel.Controls.Add(plotView);
+                flowLayout.Controls.Add(plotView);
                 size.Width += plotView.Size.Width;
             }
+
             window.Size = size;
             window.ResumeLayout(true);
 

@@ -52,14 +52,13 @@ namespace NeuralMotion
 
             this.ValueTrainer = new SgdTrainer<double>(Value)
             {
-                LearningRate = 0.1,
-                L1Decay = 0.0
+                LearningRate = 0.01
             };
 
             this.PolicyTrainer = new ActorCriticTrainer(Policy, ValueTrainer)
             {
-                LearningRate = 0.001,
-                L1Decay = 0.0
+                LearningRate = 0.01,
+                Gamma = 0
             };
 
             this.GoalReached = 0;
@@ -70,15 +69,9 @@ namespace NeuralMotion
         public void Control(MountainCar environment)
         {
             if (Epochs < 100000)
-            {
                 PolicyTrainer.Bootstraping = true;
-                ValueTrainer.LearningRate = 0.1;
-            }
             else
-            {
                 PolicyTrainer.Bootstraping = false;
-                ValueTrainer.LearningRate = 0.01;
-            }
 
             if (this.path == null)
             {
@@ -104,20 +97,24 @@ namespace NeuralMotion
             }
 
             environment.Step();
-            
+            this.Rewards.Push(environment.Reward);
+
             if (environment.Reward > this.reward)
                 this.reward = environment.Reward;
 
             this.Done = environment.Done ||
-                    environment.SimTime > 10;
-            if (this.Done && environment.Done)
-                this.GoalReached++;
-            else if (this.Done)
-                this.TrainingTimedout++;
+                        environment.SimTime > 10;
 
             if (this.Done)
             {
-                this.Rewards.Push(reward);
+                if (environment.Done)
+                    this.GoalReached++;
+                else
+                    this.TrainingTimedout++;
+            }
+
+            if (path.Count > 2)
+            { 
                 this.path.SetReward(reward);
                 this.paths.Add(this.path);
                 this.path = new Path();
