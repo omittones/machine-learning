@@ -1,11 +1,8 @@
 ﻿using ConvNetSharp.Core;
-using ConvNetSharp.Core.Layers;
 using ConvNetSharp.Core.Layers.Double;
 using ConvNetSharp.Core.Training;
 using NeuralMotion.Intelligence;
-using System;
 using System.Collections.Generic;
-using System.Linq;
 
 namespace NeuralMotion
 {

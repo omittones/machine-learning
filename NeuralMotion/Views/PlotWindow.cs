@@ -1,5 +1,4 @@
 ﻿using ConvNetSharp.Core;
-using ConvNetSharp.Core.Layers;
 using ConvNetSharp.Volume;
 using OxyPlot;
 using OxyPlot.Axes;
@@ -8,7 +7,6 @@ using OxyPlot.WindowsForms;
 using System;
 using System.Drawing;
 using System.Linq;
-using System.Threading;
 using System.Windows.Forms;
 
 namespace NeuralMotion.Views
