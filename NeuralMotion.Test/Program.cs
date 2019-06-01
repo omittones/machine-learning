@@ -1,4 +1,5 @@
 ﻿using System;
+using ConvNetSharp.Core.Training;
 using ConvNetSharp.Core.Layers.Double;
 using ConvNetSharp.Volume.Double;
 using ConvNetSharp.Core;
@@ -6,7 +7,6 @@ using ConvNetSharp.Volume;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using ConvNetSharp.Core.Training;
 using NeuralMotion.Evolution;
 using System.Collections.Generic;
 using NeuralMotion.Views;
@@ -47,11 +47,11 @@ namespace NeuralMotion.Test
             var net = new Net<double>();
             net.AddLayer(new InputLayer(1, 1, 2));
             net.AddLayer(new FullyConnLayer(20));
-            net.AddLayer(new LeakyReluLayer());
+            net.AddLayer(new LeakyReluLayer(0.3));
             net.AddLayer(new FullyConnLayer(10));
-            net.AddLayer(new LeakyReluLayer());
+            net.AddLayer(new LeakyReluLayer(0.3));
             net.AddLayer(new FullyConnLayer(2));
-            net.AddLayer(new SoftmaxLayer());
+            net.AddLayer(new SoftmaxLayer(2));
 
             ShowAccuracy(rnd, net);
 
@@ -61,10 +61,7 @@ namespace NeuralMotion.Test
             var means = new MovingStatistics(100);
             var pgTrainer = new VanillaPolicyGradientTrainer(net)
             {
-                LearningRate = 0.1,
-                Momentum = 0,
-                L2Decay = 0,
-                L1Decay = 0
+                LearningRate = 0.1
             };
             
             var inputs = BuilderInstance<double>.Volume.SameAs(Shape.From(1, 1, 2, 1));
@@ -146,9 +143,9 @@ namespace NeuralMotion.Test
             var net = new Net<double>();
             net.AddLayer(new InputLayer(1, 1, 2));
             net.AddLayer(new FullyConnLayer(30));
-            net.AddLayer(new LeakyReluLayer());
+            net.AddLayer(new LeakyReluLayer(0.3));
             net.AddLayer(new FullyConnLayer(20));
-            net.AddLayer(new LeakyReluLayer());
+            net.AddLayer(new LeakyReluLayer(0.3));
             net.AddLayer(new FullyConnLayer(2));
             net.AddLayer(new RegressionLayer());
 
@@ -169,7 +166,6 @@ namespace NeuralMotion.Test
                 ReplaysPerIteration = 10,
                 Gamma = 0,
                 ClampErrorTo = 1,
-                L1Decay = 0,
                 FreezeInterval = 0
             };
 
@@ -230,11 +226,11 @@ namespace NeuralMotion.Test
             var net = new Net<double>();
             net.AddLayer(new InputLayer(1, 1, 2));
             net.AddLayer(new FullyConnLayer(20));
-            net.AddLayer(new LeakyReluLayer());
+            net.AddLayer(new LeakyReluLayer(0.3));
             net.AddLayer(new FullyConnLayer(10));
-            net.AddLayer(new LeakyReluLayer());
+            net.AddLayer(new LeakyReluLayer(0.3));
             net.AddLayer(new FullyConnLayer(2));
-            net.AddLayer(new SoftmaxLayer());
+            net.AddLayer(new SoftmaxLayer(2));
 
             ShowAccuracy(rnd, net);
 
@@ -312,7 +308,7 @@ namespace NeuralMotion.Test
                     trainer.Train(sample =>
                     {
                         for (var i = 0; i < sample.Length; i++)
-                            sample[i].DoMultiply(parameters[i].Volume, 1.0);
+                            sample[i].Multiply(1.0, parameters[i].Volume);
                         var output = net.Forward(validation);
                         var batchLoss = 0.0;
                         for (var n = 0; n < batchSize; n++)
@@ -326,7 +322,7 @@ namespace NeuralMotion.Test
                     });
 
                     for (var i = 0; i < trainer.BestSample.Parameters.Length; i++)
-                        trainer.BestSample.Parameters[i].DoMultiply(parameters[i].Volume, 1.0);
+                        trainer.BestSample.Parameters[i].Multiply(1.0, parameters[i].Volume);
 
                     Console.WriteLine($"{epoch:0000} STDEVS:{trainer.AvgStdDevs:0.000} RETURNS: {trainer.BestSample?.Returns:0.0000}");
                 }
@@ -344,7 +340,7 @@ namespace NeuralMotion.Test
                 var expectedValidation = getClasses(validation);
 
                 var output = net.Forward(validation);
-                var predictedValidation = new int[validation.Shape.GetDimension(3)];
+                var predictedValidation = new int[validation.Shape.Dimensions[3]];
                 for (var n = 0; n < predictedValidation.Length; n++)
                     predictedValidation[n] = output.Get(0, 0, 0, n) > output.Get(0, 0, 1, n) ? 0 : 1;
 
@@ -401,7 +397,7 @@ namespace NeuralMotion.Test
 
         private static int[] GetClassesForBorders(Volume<double> inputs)
         {
-            var count = inputs.Shape.GetDimension(3);
+            var count = inputs.Shape.Dimensions[3];
             var output = new int[count];
             for (var n = 0; n < count; n++)
             {

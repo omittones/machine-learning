@@ -46,9 +46,9 @@ namespace NeuralMotion
 
             if (actor.Id == 0)
             {
-                var indicators = new IIndicator[6];
+                var indicators = new IIndicator[neighbours.Length];
                 var pos = actor.Position;
-                for (var i = 0; i < 6; i++)
+                for (var i = 0; i < neighbours.Length; i++)
                 {
                     var next = pos.Offset(neighbours[i].pos.X, neighbours[i].pos.Y);
                     indicators[i] = new Line(pos, next);

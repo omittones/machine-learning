@@ -27,18 +27,17 @@ namespace NeuralMotion
             this.net = new Net<double>();
             this.net.AddLayer(new InputLayer(1, 1, this.InputLength));
             this.net.AddLayer(new FullyConnLayer(50));
-            this.net.AddLayer(new LeakyReluLayer());
+            this.net.AddLayer(new LeakyReluLayer(0.3));
             this.net.AddLayer(new FullyConnLayer(50));
-            this.net.AddLayer(new LeakyReluLayer());
+            this.net.AddLayer(new LeakyReluLayer(0.3));
             this.net.AddLayer(new FullyConnLayer(50));
-            this.net.AddLayer(new LeakyReluLayer());
+            this.net.AddLayer(new LeakyReluLayer(0.3));
             this.net.AddLayer(new FullyConnLayer(OutputLength));
             this.net.AddLayer(new RegressionLayer());
 
             this.Trainer = new DQNTrainer(net, OutputLength)
             {
                 LearningRate = 0.1,
-                L1Decay = 0.01,
                 ClampErrorTo = 1,
                 Epsilon = 0.1,
                 Gamma = 0.5,

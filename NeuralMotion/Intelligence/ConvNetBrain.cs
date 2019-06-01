@@ -44,19 +44,19 @@ namespace NeuralMotion.Intelligence
             this.net = new Net<float>();
             net.AddLayer(new InputLayer(inputs, 1, 1));
             net.AddLayer(new FullyConnLayer(inputs));
-            net.AddLayer(new LeakyReluLayer());
+            net.AddLayer(new LeakyReluLayer(0.3f));
             net.AddLayer(new FullyConnLayer(outputs));
-            net.AddLayer(new SoftmaxLayer());
+            net.AddLayer(new SoftmaxLayer(outputs));
 
             this.map = new List<VolumePointer>();
             var volumes = this.net.GetParametersAndGradients();
             for (var x = 0; x < volumes.Count; x++)
             {
                 var volume = volumes[x].Volume;
-                for (var width = 0; width < volume.Shape.GetDimension(0); width++)
-                    for (var height = 0; height < volume.Shape.GetDimension(1); height++)
-                        for (var depth = 0; depth < volume.Shape.GetDimension(2); depth++)
-                            for (var number = 0; number < volume.Shape.GetDimension(3); number++)
+                for (var width = 0; width < volume.Shape.Dimensions[0]; width++)
+                    for (var height = 0; height < volume.Shape.Dimensions[1]; height++)
+                        for (var depth = 0; depth < volume.Shape.Dimensions[2]; depth++)
+                            for (var number = 0; number < volume.Shape.Dimensions[3]; number++)
                                 map.Add(new VolumePointer
                                 {
                                     Net = net,

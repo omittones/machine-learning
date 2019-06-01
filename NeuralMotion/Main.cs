@@ -32,14 +32,9 @@ namespace NeuralMotion
             Ops<float>.SkipValidation = true;
             Ops<double>.SkipValidation = true;
 
-            var ctrl = new ActorCriticCarController();
-            var env = new MountainCar();
-            env.Strict = true;
-
-            //this.Controller = new PolicyGradientsController(500, 5);
-            //this.Controller = new DQNController();
-            //this.Environment = new BallArena(Controller, 10, 0.06f);
-            //this.Renderer = new BallArenaRenderer(this.Environment);
+            var ctrl = new DQNBallController();
+            var env = new BallArena(ctrl, 10);
+            this.Renderer = new BallArenaRenderer(env);
 
             this.Environment = env;
             this.Controller = ctrl;
@@ -54,23 +49,23 @@ namespace NeuralMotion
             this.uiSettings.RealTime = this.Session.RealTime;
             this.uiSettings.DontShowSim = false;
             this.uiSettings.ShowDiagnostics = true;
-            this.uiSettings.LearningRate = ctrl.PolicyTrainer.LearningRate;
-            this.uiDisplay.Renderer = env;
+            this.uiSettings.LearningRate = ctrl.Trainer.LearningRate;
+            this.uiDisplay.Renderer = this.Renderer;
 
-            this.uiDiagnostics = PlotWindow.ValueHeatmaps(
-                ctrl.Policy,
-                MountainCar.MinPosition, MountainCar.MaxPosition,
-                -MountainCar.MaxVelocity * 10, MountainCar.MaxVelocity * 10,
-                minClass: 0,
-                maxClass: 1,
-                xTitle: "position",
-                yTitle: "speed",
-                titles: "back,nothing,forward");
+            //this.uiDiagnostics = PlotWindow.ValueHeatmaps(
+            //    ctrl.Policy,
+            //    MountainCar.MinPosition, MountainCar.MaxPosition,
+            //    -MountainCar.MaxVelocity * 10, MountainCar.MaxVelocity * 10,
+            //    minClass: 0,
+            //    maxClass: 1,
+            //    xTitle: "position",
+            //    yTitle: "speed",
+            //    titles: "back,nothing,forward");
 
-            this.uiValueWindow = PlotWindow.ValueHeatmaps(
-                ctrl.Value,
-                MountainCar.MinPosition, MountainCar.MaxPosition,
-                -MountainCar.MaxVelocity * 10, MountainCar.MaxVelocity * 10);
+            //this.uiValueWindow = PlotWindow.ValueHeatmaps(
+            //    ctrl.Value,
+            //    MountainCar.MinPosition, MountainCar.MaxPosition,
+            //    -MountainCar.MaxVelocity * 10, MountainCar.MaxVelocity * 10);
 
             //this.uiDiagnostics = PlotWindow.ClassHeatmap(
             //    ctrl.Net,
@@ -79,22 +74,24 @@ namespace NeuralMotion
             //    "position", "speed", "back,nothing,forward",
             //    () => new PointD(env.CarPosition, env.CarVelocity));
 
-            this.uiDiagnostics.FormClosed += (s, e) => this.Close();
-            this.uiValueWindow.FormClosed += (s, e) => this.Close();
+            //this.uiDiagnostics.FormClosed += (s, e) => this.Close();
+            //this.uiValueWindow.FormClosed += (s, e) => this.Close();
 
             refreshTimer.Interval = 1000 / 60;
             refreshTimer.Tick += (s, e) =>
             {
                 this.Session.RealTime = uiSettings.RealTime;
+
                 //this.Renderer.ShowKicks = uiSettings.ShowBallStatus;
                 //this.Renderer.ShowPosition = uiSettings.ShowBallStatus;
                 //this.Renderer.ShowSpeed = uiSettings.ShowBallStatus;
-
-                ctrl.PolicyTrainer.LearningRate = uiSettings.LearningRate;
+                //ctrl.PolicyTrainer.LearningRate = uiSettings.LearningRate;
                 //ctrl.Trainer.Epsilon = uiSettings.Epsilon;
 
-                this.uiDiagnostics.TrackChanges = !this.uiSettings.DontShowSim;
-                this.uiValueWindow.TrackChanges = !this.uiSettings.DontShowSim;
+                if (this.uiDiagnostics != null)
+                    this.uiDiagnostics.TrackChanges = !this.uiSettings.DontShowSim;
+                if (this.uiValueWindow != null)
+                    this.uiValueWindow.TrackChanges = !this.uiSettings.DontShowSim;
 
                 if (!this.uiSettings.DontShowSim)
                     this.uiDisplay.Refresh();

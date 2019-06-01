@@ -28,9 +28,9 @@ namespace NeuralMotion
             this.Net = new Net<double>();
             this.Net.AddLayer(new InputLayer(1, 1, 2));
             this.Net.AddLayer(new FullyConnLayer(10));
-            this.Net.AddLayer(new LeakyReluLayer());
+            this.Net.AddLayer(new LeakyReluLayer(0.3));
             this.Net.AddLayer(new FullyConnLayer(3));
-            this.Net.AddLayer(new SoftmaxLayer());
+            this.Net.AddLayer(new SoftmaxLayer(3));
 
             this.Rewards = new MovingStatistics(1000);
 
@@ -39,8 +39,7 @@ namespace NeuralMotion
 
             this.Trainer = new VanillaPolicyGradientTrainer(Net)
             {
-                LearningRate = 0.1,
-                L1Decay = 0.0
+                LearningRate = 0.1
             };
 
             this.GoalReached = 0;

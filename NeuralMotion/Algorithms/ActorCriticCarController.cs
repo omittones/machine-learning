@@ -31,14 +31,14 @@ namespace NeuralMotion
             this.Policy = new Net<double>();
             this.Policy.AddLayer(new InputLayer(1, 1, 2));
             this.Policy.AddLayer(new FullyConnLayer(10));
-            this.Policy.AddLayer(new LeakyReluLayer());
+            this.Policy.AddLayer(new LeakyReluLayer(0.3));
             this.Policy.AddLayer(new FullyConnLayer(3));
-            this.Policy.AddLayer(new SoftmaxLayer());
+            this.Policy.AddLayer(new SoftmaxLayer(3));
 
             this.Value = new Net<double>();
             this.Value.AddLayer(new InputLayer(1, 1, 2));
             this.Value.AddLayer(new FullyConnLayer(10));
-            this.Value.AddLayer(new LeakyReluLayer());
+            this.Value.AddLayer(new LeakyReluLayer(0.3));
             this.Value.AddLayer(new FullyConnLayer(1));
             this.Value.AddLayer(new RegressionLayer());
 

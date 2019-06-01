@@ -29,15 +29,15 @@ namespace NeuralMotion.Test
         {
             net.FromChromosome(chromosome);
 
-            var size = inputs.Shape.GetDimension(3);
+            var size = inputs.Shape.Dimensions[3];
             var predicted = net.Forward(inputs, false);
 
             //loss is the class negative log likelihood
             var fitness = 0.0;
             for (var n = 0; n < size; n++)
-                for (var d = 0; d < outputs.Shape.GetDimension(2); d++)
-                    for (var h = 0; h < outputs.Shape.GetDimension(1); h++)
-                        for (var w = 0; w < outputs.Shape.GetDimension(0); w++)
+                for (var d = 0; d < outputs.Depth; d++)
+                    for (var h = 0; h < outputs.Height; h++)
+                        for (var w = 0; w < outputs.Width; w++)
                         {
                             var expected = outputs.Get(w, h, d, n);
                             var actual = predicted.Get(w, h, d, n);

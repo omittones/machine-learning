@@ -74,37 +74,29 @@ namespace NeuralMotion.Simulator
 
         private void Loop(CancellationToken token)
         {
-            try
+            while (this.RestartOnEnd)
             {
-                while (this.RestartOnEnd)
+                bool done = false;
+                while (!done)
                 {
-                    bool done = false;
-                    while (!done)
+                    if (token.IsCancellationRequested)
+                        return;
+
+                    var localStart = DateTime.UtcNow;
+                    var simStart = this.environment.SimTime;
+
+                    done = this.Step();
+
+                    if (this.RealTime)
                     {
-                        if (token.IsCancellationRequested)
-                            return;
-
-                        var localStart = DateTime.UtcNow;
-                        var simStart = this.environment.SimTime;
-
-                        done = this.Step();
-
-                        if (this.RealTime)
-                        {
-                            var localDuration = DateTime.UtcNow.Subtract(localStart).TotalSeconds;
-                            var simDuration = this.environment.SimTime - simStart;
-                            if (simDuration > localDuration)
-                                Thread.Sleep((int)((simDuration - localDuration) * 1000));
-                        }
+                        var localDuration = DateTime.UtcNow.Subtract(localStart).TotalSeconds;
+                        var simDuration = this.environment.SimTime - simStart;
+                        if (simDuration > localDuration)
+                            Thread.Sleep((int)((simDuration - localDuration) * 1000));
                     }
-
-                    Initialize();
                 }
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine(ex.Message);
-                throw;
+
+                Initialize();
             }
         }
 
