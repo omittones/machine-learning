@@ -1,6 +1,6 @@
 ﻿using System.Drawing;
 
-namespace NeuralMotion.Simulator
+namespace Environments
 {
     public class Line : IIndicator
     {

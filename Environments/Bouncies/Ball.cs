@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using System.Drawing;
 
-namespace NeuralMotion.Simulator
+namespace Environments.Bouncies
 {
     public class Ball
     {

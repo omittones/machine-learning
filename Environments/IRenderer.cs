@@ -1,6 +1,6 @@
 ﻿using System.Drawing;
 
-namespace NeuralMotion.Views
+namespace Environments
 {
     public interface IRenderer
     {

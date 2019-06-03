@@ -3,7 +3,7 @@ using System.Drawing;
 using System.Linq;
 using Util;
 
-namespace NeuralMotion.Simulator
+namespace Environments.Bouncies
 {
     public class CollisionDetector
     {

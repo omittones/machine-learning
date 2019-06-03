@@ -9,6 +9,7 @@ using NeuralMotion.Views;
 using ConvNetSharp.Core.Training;
 using System.Drawing;
 using ConvNetSharp.Core;
+using Environments;
 
 namespace NeuralMotion
 {
@@ -33,8 +34,8 @@ namespace NeuralMotion
             Ops<double>.SkipValidation = true;
 
             var ctrl = new DQNBallController();
-            var env = new BallArena(ctrl, 10);
-            this.Renderer = new BallArenaRenderer(env);
+            var env = new Environments.Bouncies.Environment(10);
+            this.Renderer = new Environments.Bouncies.Renderer(env);
 
             this.Environment = env;
             this.Controller = ctrl;

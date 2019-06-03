@@ -1,11 +1,9 @@
 ﻿using System.Drawing;
-using NeuralMotion.Simulator;
 using Util;
-using NeuralMotion.Views;
 
-namespace NeuralMotion.Simulator
+namespace Environments.Bouncies
 {
-    public class BallArenaRenderer : IRenderer
+    public class Renderer : IRenderer
     {
         public bool ShowPreviewFlag { get; set; }
         public bool ShowPosition { get; set; }
@@ -18,9 +16,9 @@ namespace NeuralMotion.Simulator
         private Pen penBorder;
         private Font fontText;
 
-        private readonly BallArena arena;
+        private readonly Environment arena;
 
-        public BallArenaRenderer(BallArena arena)
+        public Renderer(Environment arena)
         {
             this.arena = arena;
 

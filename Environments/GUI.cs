@@ -3,11 +3,11 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
-namespace NeuralMotion.Views
+namespace Environments
 {
-    public static class Plot
+    public static class GUI
     {
-        public static Task Show(Func<PlotWindow> factory)
+        public static Task ShowForm(Func<Form> factory)
         {
             var task = Task.Run(() =>
             {

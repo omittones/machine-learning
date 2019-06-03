@@ -3,6 +3,7 @@ using System.Drawing;
 using System.Threading;
 using System.Threading.Tasks;
 using NeuralMotion.Intelligence;
+using Environments;
 
 namespace NeuralMotion.Simulator
 {

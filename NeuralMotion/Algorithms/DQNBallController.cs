@@ -4,6 +4,7 @@ using ConvNetSharp.Core;
 using ConvNetSharp.Core.Layers.Double;
 using ConvNetSharp.Core.Training;
 using ConvNetSharp.Volume;
+using Environments.Bouncies;
 
 namespace NeuralMotion
 {

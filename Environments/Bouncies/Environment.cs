@@ -1,13 +1,10 @@
 ﻿using System;
 using System.Drawing;
-using System.Threading;
-using System.Threading.Tasks;
-using NeuralMotion.Intelligence;
 using Util;
 
-namespace NeuralMotion.Simulator
+namespace Environments.Bouncies
 {
-    public partial class BallArena : IEnvironment
+    public partial class Environment : IEnvironment
     {
         private static Random rnd = new Random();
 
@@ -23,18 +20,13 @@ namespace NeuralMotion.Simulator
         }
 
         private readonly CollisionDetector collisionDetector;
-        private readonly IController<BallArena> controller;
 
-        public BallArena(
-            IController<BallArena> controller,
-            int noBalls = 5,
-            float ballRadius = 0.06f)
+        public Environment(int noBalls = 5, float ballRadius = 0.06f)
         {
             noBalls = Math.Max(1, noBalls);
 
             this.TimeStep = 0.02f;
             this.BallRadius = ballRadius;
-            this.controller = controller;
             this.collisionDetector = new CollisionDetector
             {
                 BallRadius = this.BallRadius
@@ -49,13 +41,13 @@ namespace NeuralMotion.Simulator
 
         private void InitBall(int index, Ball ball)
         {
-            ball.Speed = new System.Drawing.PointF
+            ball.Speed = new PointF
             {
                 X = (float)rnd.NextDouble() * 2 - 1.0f,
                 Y = (float)rnd.NextDouble() * 2 - 1.0f
             };
             ball.Speed = ball.Speed.Scale(0.5f);
-            ball.Position = new System.Drawing.PointF
+            ball.Position = new PointF
             {
                 X = (float)rnd.NextDouble() * 2 - 1.0f,
                 Y = (float)rnd.NextDouble() * 2 - 1.0f
@@ -89,30 +81,71 @@ namespace NeuralMotion.Simulator
             this.SimTime = 0;
         }
 
-        private float lastTime = -1;
         private PointF[] prevAccels;
 
-        public void Step()
-        {
-            PhysicsLoop();
 
-            DecisionLoop();
+        public State Step(float[] actions)
+        {
+            ApplyActions(actions);
+
+            MoveBalls();
 
             this.SimTime += this.TimeStep;
-        }
 
-        private void DecisionLoop()
-        {
-            if (this.lastTime > this.SimTime ||
-                this.SimTime - lastTime >= 0.1)
+            return new State
             {
-                lastTime = this.SimTime;
-
-                this.controller.Control(this);
-            }
+                Done = false,
+                Observation = CollectObservation(),
+                Info = null,
+                Reward = 0
+            };
         }
 
-        private void PhysicsLoop()
+        protected virtual float[] CollectObservation()
+        {
+            return null;
+            //var output = new BallSenses[this.EngineBalls.Length];
+            //for (var i = 0; i < this.EngineBalls.Length; i++)
+            //{
+            //    output[i] = new BallSenses();
+            //}
+            //return output;
+        }
+
+        protected virtual void ApplyActions(float[] actions)
+        {
+            //Debug.Assert(actions.Length == this.EngineBalls.Length);
+            //for (var i = 0; i < this.EngineBalls.Length; i++)
+            //{
+            //    var ball = this.EngineBalls[i];
+            //    var action = actions[i];
+            //    switch (action)
+            //    {
+            //        case Action.None:
+            //            ball.Acceleration.X = 0;
+            //            ball.Acceleration.Y = 0;
+            //            break;
+            //        case Action.Down:
+            //            ball.Acceleration.X = 0;
+            //            ball.Acceleration.Y = 0.5f;
+            //            break;
+            //        case Action.Up:
+            //            ball.Acceleration.X = 0;
+            //            ball.Acceleration.Y = -0.5f;
+            //            break;
+            //        case Action.Right:
+            //            ball.Acceleration.X = 0.5f;
+            //            ball.Acceleration.Y = 0;
+            //            break;
+            //        case Action.Left:
+            //            ball.Acceleration.X = -0.5f;
+            //            ball.Acceleration.Y = 0;
+            //            break;
+            //    }
+            //}
+        }
+
+        private void MoveBalls()
         {
             var detections = this.collisionDetector.Detect(this.EngineBalls, this.SimTime);
             this.TotalCollisions += detections;

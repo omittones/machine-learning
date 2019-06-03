@@ -1,12 +1,13 @@
 ﻿using System.Linq;
 using NeuralMotion.Intelligence;
-using NeuralMotion.Simulator;
-using Util;
 using System.Diagnostics;
+using Environments.Bouncies;
+using Environments;
+using Util;
 
 namespace NeuralMotion
 {
-    public abstract class BallController : IController<BallArena>
+    public abstract class BallController : IController<Environment>
     {
         public bool Done => false;
 
@@ -106,7 +107,7 @@ namespace NeuralMotion
         }
 
         private float lastTime = -1;
-        public void Control(BallArena environment)
+        public void Control(Environment environment)
         {
             var now = environment.SimTime;
             if (this.lastTime > now || now - lastTime >= 0.1)
@@ -116,7 +117,7 @@ namespace NeuralMotion
                     ControlBall(environment.EngineBalls, ball);
             }
 
-            environment.Step();
+            var state = environment.Step(null);
         }
 
         public abstract void ControlBall(Ball[] arena, Ball actor);
