@@ -8,10 +8,11 @@ namespace Environments.Bouncies
     {
         private static Random rnd = new Random();
 
-        public Ball[] EngineBalls { get; private set; }
-        public float TimeStep { get; private set; }
-        public float BallRadius { get; private set; }
-        public float SimTime { get; private set; }
+        public float TimeStep;
+        public float FrictionFactor;
+        public float BallRadius;
+        public Ball[] Objects { get; private set; }
+        public float ElapsedTime { get; private set; }
         public int TotalCollisions { get; private set; }
 
         public float MaximumBallSpeed
@@ -19,24 +20,29 @@ namespace Environments.Bouncies
             get { return this.BallRadius / this.TimeStep; }
         }
 
-        private readonly CollisionDetector collisionDetector;
-
-        public Environment(int noBalls = 5, float ballRadius = 0.06f)
+        private readonly CollisionDetector collisions;
+        
+        public Environment(
+            int noBalls = 5,
+            float ballRadius = 0.06f,
+            float frictionFactor = 0.999f)
         {
             noBalls = Math.Max(1, noBalls);
 
             this.TimeStep = 0.02f;
             this.BallRadius = ballRadius;
-            this.collisionDetector = new CollisionDetector
+            this.FrictionFactor = frictionFactor;
+            this.collisions = new CollisionDetector
             {
-                BallRadius = this.BallRadius
+                BallRadius = this.BallRadius,
+                ElasticFactor = this.FrictionFactor
             };
 
             //stvori lopte i dodatne parametre koje engine koristi
-            this.EngineBalls = new Ball[noBalls];
-            for (var index = 0; index < EngineBalls.Length; index++)
-                this.EngineBalls[index] = new Ball(index);
-            this.prevAccels = new PointF[this.EngineBalls.Length];
+            this.Objects = new Ball[noBalls];
+            for (var index = 0; index < Objects.Length; index++)
+                this.Objects[index] = new Ball(index);
+            this.prevAccels = new PointF[this.Objects.Length];
         }
 
         private void InitBall(int index, Ball ball)
@@ -54,35 +60,26 @@ namespace Environments.Bouncies
             };
         }
 
-        public float RandomPosition(RandomEx generator)
-        {
-            return generator.NextF(-1.0f + this.BallRadius, 1.0f - this.BallRadius);
-        }
-
         public void Reset()
         {
             this.TotalCollisions = 0;
-            for (var index = 0; index < EngineBalls.Length; index++)
+            for (var index = 0; index < Objects.Length; index++)
             {
                 prevAccels[index] = PointF.Empty;
 
-                EngineBalls[index].Reset();
+                Objects[index].Reset();
+                Objects[index].Distances = new float[Objects.Length];
+                Objects[index].Speed = new PointF(0, 0);
+                Objects[index].Acceleration = new PointF(0, 0);
 
-                //stvori udaljenosti od ostalih loptica
-                //zapamti pocetni polozaj
-                EngineBalls[index].Distances = new float[EngineBalls.Length];
-                EngineBalls[index].Speed = new PointF(0, 0);
-                EngineBalls[index].Acceleration = new PointF(0, 0);
+                InitBall(index, Objects[index]);
 
-                InitBall(index, EngineBalls[index]);
-
-                EngineBalls[index].StartingPosition = EngineBalls[index].Position;
+                Objects[index].StartingPosition = Objects[index].Position;
             }
-            this.SimTime = 0;
+            this.ElapsedTime = 0;
         }
 
         private PointF[] prevAccels;
-
 
         public State Step(float[] actions)
         {
@@ -90,7 +87,7 @@ namespace Environments.Bouncies
 
             MoveBalls();
 
-            this.SimTime += this.TimeStep;
+            this.ElapsedTime += this.TimeStep;
 
             return new State
             {
@@ -147,14 +144,18 @@ namespace Environments.Bouncies
 
         private void MoveBalls()
         {
-            var detections = this.collisionDetector.Detect(this.EngineBalls, this.SimTime);
+            this.collisions.BallRadius = this.BallRadius;
+            this.collisions.ElasticFactor = this.FrictionFactor;
+
+            var detections = this.collisions.Apply(this.Objects, this.ElapsedTime);
+
             this.TotalCollisions += detections;
 
             //pokreni svaku loptu
             //zapamti jesu li u stanju kolizije
-            for (var i = 0; i < this.EngineBalls.Length; i++)
+            for (var i = 0; i < this.Objects.Length; i++)
             {
-                var ball = this.EngineBalls[i];
+                var ball = this.Objects[i];
                 ball.Energy += ball.Acceleration.Length() * this.TimeStep;
                 if (ball.Acceleration != prevAccels[i])
                     ball.Energy += prevAccels[i].Length() * this.TimeStep;
@@ -167,7 +168,7 @@ namespace Environments.Bouncies
                     ball.Speed = speed;
 
                 //friction
-                ball.Speed = ball.Speed.Scale(0.999f);
+                ball.Speed = ball.Speed.Scale(this.FrictionFactor);
 
                 ball.Position = ball.Position.Offset(ball.Speed.Scale(this.TimeStep));
                 ball.DistanceTravelled += speedLength * this.TimeStep;

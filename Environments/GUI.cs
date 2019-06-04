@@ -14,7 +14,6 @@ namespace Environments
                 Application.EnableVisualStyles();
                 Application.SetCompatibleTextRenderingDefault(false);
                 Application.Run(factory());
-                Console.WriteLine("Display thread stopped!");
             });
 
             while (task.Status == TaskStatus.WaitingForActivation ||

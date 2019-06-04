@@ -59,7 +59,7 @@ namespace Environments.Bouncies
             var radius = arena.BallRadius * 2;
             var halfRadius = arena.BallRadius;
 
-            var time = $"{this.arena.SimTime} {(ShowPreviewFlag ? "PREVIEW" : "")}";
+            var time = $"{this.arena.ElapsedTime} {(ShowPreviewFlag ? "PREVIEW" : "")}";
             g.DrawString(time, this.fontText, penBall.Brush, new PointF(-0.9f, -0.9f));
 
             var point = new PointF(0, 0);
@@ -67,14 +67,14 @@ namespace Environments.Bouncies
             g.DrawLine(penBall, point.Offset(0, -0.1f), point.Offset(0, 0.1f));
             g.DrawRectangle(penBorder, -1, -1, 2, 2);
 
-            for (var index = 0; index < arena.EngineBalls.Length; index++)
+            for (var index = 0; index < arena.Objects.Length; index++)
             {
-                var ball = arena.EngineBalls[index];
-                point = arena.EngineBalls[index].Position;
+                var ball = arena.Objects[index];
+                point = arena.Objects[index].Position;
 
                 g.DrawLine(penIndicators, point, point.Offset(ball.Acceleration));
 
-                if (arena.SimTime - ball.LastCollisionTime < 0.1)
+                if (arena.ElapsedTime - ball.LastCollisionTime < 0.1)
                     g.DrawEllipse(penCollision, point.X - halfRadius, point.Y - halfRadius, radius, radius);
                 else
                     g.DrawEllipse(penBall, point.X - halfRadius, point.Y - halfRadius, radius, radius);

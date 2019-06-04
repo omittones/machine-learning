@@ -28,7 +28,9 @@
         /// </summary>
         private void InitializeComponent()
         {
+            this.components = new System.ComponentModel.Container();
             this.envRender = new Environments.Forms.Render();
+            this.refreshPanel = new System.Windows.Forms.Timer(this.components);
             this.SuspendLayout();
             // 
             // envRender
@@ -41,6 +43,11 @@
             this.envRender.Renderer = null;
             this.envRender.Size = new System.Drawing.Size(628, 559);
             this.envRender.TabIndex = 0;
+            // 
+            // refreshPanel
+            // 
+            this.refreshPanel.Enabled = true;
+            this.refreshPanel.Interval = 16;
             // 
             // EnvironmentDisplay
             // 
@@ -57,5 +64,6 @@
         #endregion
 
         private Render envRender;
+        private System.Windows.Forms.Timer refreshPanel;
     }
 }

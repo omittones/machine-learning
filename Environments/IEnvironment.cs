@@ -10,7 +10,7 @@
 
     public interface IEnvironment
     {
-        float SimTime { get; }
+        float ElapsedTime { get; }
 
         State Step(float[] action);
 

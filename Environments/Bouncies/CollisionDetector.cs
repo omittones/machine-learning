@@ -7,17 +7,17 @@ namespace Environments.Bouncies
 {
     public class CollisionDetector
     {
-        private static readonly PointF Zero = new PointF(0, 0);
-        private const float ElasticFactor = 0.99f;
+        public float ElasticFactor = 0.99f;
+        public float BallRadius = 1;
 
-        public float BallRadius { get; set; }
         private bool[] ballIsProcessed;
         private PointF[] lastCollDetections;
         private float[] distanceTillDetection;
+        private static readonly PointF zero = new PointF(0, 0);
 
-        public int Detect(Ball[] balls, float currentTime)
+        public int Apply(Ball[] balls, float currentTime)
         {
-            var minDistanceBetweenBalls = this.BallRadius*2;
+            var minDistanceBetweenBalls = this.BallRadius * 2;
 
             //ako obradimo jednu loptu, obradili smo je za sve ostale
             //pa kad obraðujemo ostale lopte možemo nju preskoèiti
@@ -51,13 +51,13 @@ namespace Environments.Bouncies
                 ballIsProcessed[xFirst] = true;
                 lastCollDetections[xFirst] = first.Position;
 
-                //svaki doticaj sa zidom se takoðer raèuna kao kolizija
+                //touch wall, and you collide
                 if (!first.Position.X.IsInside(-limit, limit))
                 {
                     first.KicksToBorder++;
                     first.Speed.X = -first.Speed.X;
                     first.Speed = first.Speed.Scale(ElasticFactor);
-                    first.Acceleration = Zero;
+                    first.Acceleration = zero;
 
                     first.Position.X = Math.Max(first.Position.X, -limit);
                     first.Position.X = Math.Min(first.Position.X, limit);
@@ -67,7 +67,7 @@ namespace Environments.Bouncies
                     first.KicksToBorder++;
                     first.Speed.Y = -first.Speed.Y;
                     first.Speed = first.Speed.Scale(ElasticFactor);
-                    first.Acceleration = Zero;
+                    first.Acceleration = zero;
 
                     first.Position.Y = Math.Max(first.Position.Y, -limit);
                     first.Position.Y = Math.Min(first.Position.Y, limit);
@@ -81,7 +81,7 @@ namespace Environments.Bouncies
                         continue;
                     }
 
-                    //ako je obrađena druga znaèi da je ne trebamo ponovo provjeravat
+                    //ako je obrađena druga znači da je ne trebamo ponovo provjeravat
                     if (ballIsProcessed[xSecond])
                         continue;
 
@@ -100,7 +100,7 @@ namespace Environments.Bouncies
 
                         //ovjde ne lockamo jer se kolizije koriste samo u ovom threadu
                         //zapamti sve kolizije, a reagiraj samo na prvu                        
-                        var bounceSpeed = (first.Speed.Length() + second.Speed.Length()) / 4.0f;
+                        var bounceSpeed = (first.Speed.Length() + second.Speed.Length()) / 2.0f;
                         bounceVector = bounceVector.Scale(1 / ballDistance * bounceSpeed, 1 / ballDistance * bounceSpeed);
                         bounceVector = bounceVector.Scale(ElasticFactor);
 
@@ -115,7 +115,7 @@ namespace Environments.Bouncies
                         if (first.CollisionCount == 0)
                         {
                             first.Speed = bounceVector.Negative();
-                            first.Acceleration = Zero;
+                            first.Acceleration = zero;
                             if (firstSpeed > secondSpeed)
                                 first.KicksToBall++;
                             else
@@ -127,7 +127,7 @@ namespace Environments.Bouncies
                         if (second.CollisionCount == 0)
                         {
                             second.Speed = bounceVector;
-                            second.Acceleration = Zero;
+                            second.Acceleration = zero;
                             if (firstSpeed > secondSpeed)
                                 second.KicksFromBall++;
                             else
@@ -157,7 +157,7 @@ namespace Environments.Bouncies
                     limit - first.Position.Y
                 }).Min();
 
-                this.distanceTillDetection[xFirst] = Math.Min(closestWallDistance, closestBallDistance)/2.0f;
+                this.distanceTillDetection[xFirst] = Math.Min(closestWallDistance, closestBallDistance) / 2.0f;
             }
 
             return totalCount;

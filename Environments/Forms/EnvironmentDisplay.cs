@@ -13,6 +13,14 @@ namespace Environments.Forms
         public EnvironmentDisplay()
         {
             InitializeComponent();
+
+            this.refreshPanel.Interval = 1000 / 120;
+            this.refreshPanel.Tick += RefreshPanel;
+        }
+
+        private void RefreshPanel(object sender, System.EventArgs e)
+        {
+            this.envRender?.Refresh();
         }
     }
 }
