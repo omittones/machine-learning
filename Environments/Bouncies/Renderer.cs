@@ -33,27 +33,6 @@ namespace Environments.Bouncies
             this.fontText = new Font(FontFamily.GenericSansSerif, this.arena.BallRadius / 2, FontStyle.Regular, GraphicsUnit.Point);
         }
 
-        protected string RenderBallText(Ball ball)
-        {
-            string text = string.Empty;
-            if (ShowPosition)
-            {
-                text += $"position {ball.Position.ToFormattedString()}\n";
-            }
-            if (ShowSpeed)
-            {
-                text += $"speed {ball.Speed.ToFormattedString()}\n";
-                text += $"distance {ball.DistanceTravelled:0.00}\n";
-                text += $"energy {ball.Energy:0.00}\n";
-            }
-            if (ShowKicks)
-            {
-                var totalKicks = ball.KicksToBall + ball.KicksToBorder;
-                text += $"kicks {totalKicks}\n";
-            }
-            return text.Trim();
-        }
-
         public void Render(Graphics g)
         {
             var radius = arena.BallRadius * 2;
@@ -90,6 +69,27 @@ namespace Environments.Bouncies
                     foreach (var indicator in indicators)
                         indicator?.Draw(g);
             }
+        }
+
+        protected string RenderBallText(Ball ball)
+        {
+            string text = string.Empty;
+            if (ShowPosition)
+            {
+                text += $"position {ball.Position.ToFormattedString()}\n";
+            }
+            if (ShowSpeed)
+            {
+                text += $"speed {ball.Speed.ToFormattedString()}\n";
+                text += $"distance {ball.DistanceTravelled:0.00}\n";
+                text += $"energy {ball.Energy:0.00}\n";
+            }
+            if (ShowKicks)
+            {
+                var totalKicks = ball.KicksToBall + ball.KicksToBorder;
+                text += $"kicks {totalKicks}\n";
+            }
+            return text.Trim();
         }
     }
 }

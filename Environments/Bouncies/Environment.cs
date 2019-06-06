@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics;
 using System.Drawing;
 using Util;
 
@@ -100,46 +101,62 @@ namespace Environments.Bouncies
 
         protected virtual float[] CollectObservation()
         {
-            return null;
-            //var output = new BallSenses[this.EngineBalls.Length];
-            //for (var i = 0; i < this.EngineBalls.Length; i++)
-            //{
-            //    output[i] = new BallSenses();
-            //}
-            //return output;
+            const int nmObservations = 6;
+
+            var observation = new float[this.Objects.Length * nmObservations];
+            for (var i = 0; i < this.Objects.Length; i++)
+            {
+                var ball = this.Objects[i];
+                var x = i * nmObservations;
+                observation[x++] = ball.Position.X;
+                observation[x++] = ball.Position.Y;
+                observation[x++] = ball.Speed.X;
+                observation[x++] = ball.Speed.Y;
+                observation[x++] = ball.Acceleration.X;
+                observation[x++] = ball.Acceleration.Y;
+            }
+
+            return observation;
         }
 
         protected virtual void ApplyActions(float[] actions)
         {
-            //Debug.Assert(actions.Length == this.EngineBalls.Length);
-            //for (var i = 0; i < this.EngineBalls.Length; i++)
-            //{
-            //    var ball = this.EngineBalls[i];
-            //    var action = actions[i];
-            //    switch (action)
-            //    {
-            //        case Action.None:
-            //            ball.Acceleration.X = 0;
-            //            ball.Acceleration.Y = 0;
-            //            break;
-            //        case Action.Down:
-            //            ball.Acceleration.X = 0;
-            //            ball.Acceleration.Y = 0.5f;
-            //            break;
-            //        case Action.Up:
-            //            ball.Acceleration.X = 0;
-            //            ball.Acceleration.Y = -0.5f;
-            //            break;
-            //        case Action.Right:
-            //            ball.Acceleration.X = 0.5f;
-            //            ball.Acceleration.Y = 0;
-            //            break;
-            //        case Action.Left:
-            //            ball.Acceleration.X = -0.5f;
-            //            ball.Acceleration.Y = 0;
-            //            break;
-            //    }
-            //}
+            if (actions == null)
+                return;
+
+            Debug.Assert(actions.Length == this.Objects.Length * 5);
+            for (var xBall = 0; xBall < this.Objects.Length; xBall++)
+            {
+                var selectedAction = 0;
+                for (var xAction = 1; xAction < 5; xAction++)
+                    if (actions[xBall * 5 + selectedAction] < actions[xBall * 5 + xAction])
+                        selectedAction = xAction;
+
+                var ball = this.Objects[xBall];
+                switch (selectedAction)
+                {
+                    case 0:
+                        ball.Acceleration.X = 0;
+                        ball.Acceleration.Y = 0;
+                        break;
+                    case 1:
+                        ball.Acceleration.X = 0;
+                        ball.Acceleration.Y = 1f;
+                        break;
+                    case 2:
+                        ball.Acceleration.X = 0;
+                        ball.Acceleration.Y = -1f;
+                        break;
+                    case 3:
+                        ball.Acceleration.X = 1f;
+                        ball.Acceleration.Y = 0;
+                        break;
+                    case 4:
+                        ball.Acceleration.X = -1f;
+                        ball.Acceleration.Y = 0;
+                        break;
+                }
+            }
         }
 
         private void MoveBalls()

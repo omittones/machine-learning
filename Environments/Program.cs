@@ -23,12 +23,20 @@ namespace Environments
             {
                 DateTime realStart = DateTime.UtcNow;
                 float simStart = 0;
-
+                
                 env.Reset();
+
+                var actions = new[] {
+                    0,1,0,0,0f,
+                    0,0,1,0,0f,
+                    0,0,0,1,0f,
+                    0,0,0,0,1f,
+                    1,0,0,0,0f
+                };
 
                 while (!stop)
                 {
-                    env.Step(null);
+                    env.Step(actions);
 
                     if (env.ElapsedTime > 1000)
                     {
