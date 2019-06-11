@@ -9,12 +9,12 @@ namespace Environments.Bouncies
     {
         private static Random rnd = new Random();
 
-        public float TimeStep;
-        public float FrictionFactor;
-        public float BallRadius;
+        public float TimeStep { get; private set; }
         public Ball[] Objects { get; private set; }
         public float ElapsedTime { get; private set; }
         public int TotalCollisions { get; private set; }
+        public float BallRadius { get => this.collisions.BallRadius; set => this.collisions.BallRadius = value; }
+        public float FrictionFactor { get => this.collisions.ElasticFactor; set => this.collisions.ElasticFactor = value; }
 
         public float MaximumBallSpeed
         {
@@ -22,22 +22,19 @@ namespace Environments.Bouncies
         }
 
         private readonly CollisionDetector collisions;
-        
+
         public Environment(
             int noBalls = 5,
             float ballRadius = 0.06f,
             float frictionFactor = 0.999f)
         {
+            this.collisions = new CollisionDetector();
+
             noBalls = Math.Max(1, noBalls);
 
             this.TimeStep = 0.02f;
             this.BallRadius = ballRadius;
             this.FrictionFactor = frictionFactor;
-            this.collisions = new CollisionDetector
-            {
-                BallRadius = this.BallRadius,
-                ElasticFactor = this.FrictionFactor
-            };
 
             //stvori lopte i dodatne parametre koje engine koristi
             this.Objects = new Ball[noBalls];
